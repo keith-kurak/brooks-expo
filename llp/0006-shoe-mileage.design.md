@@ -95,8 +95,10 @@ oldest start date (at most three years) and filters by `start` in TypeScript.
 
 [observed 2026-10-13] Both scheduled and foreground reads use `readShoeMiles`
 and the same TypeScript calculations. Swift only reads Health summaries.
-Android and web still have no Health reader. Steps remain a Finder input,
-not shoe wear.
+[observed 2026-10-13] Android now reads Health Connect through the same
+module contract. Web and Expo Go retain manual mileage. Limited history,
+missing distance and revoked grants preserve cached totals; see
+LLP 0005#android. Steps remain a Finder input, not shoe wear.
 
 [inferred] It is not the all-day `distanceWalkingRunning` sum. That sum counts
 every step a phone or watch records, in whatever shoes. A pair's wear comes
@@ -268,7 +270,9 @@ There is one mileage calculation and no custom native timeline writer.
 [observed] Scheduling requests a 60-minute minimum interval. Registration is
 serialized and checks current state: Health's sheet must already have been
 answered, at least one pair must be active, and TaskManager/BackgroundTask
-must be available. Retiring or removing the last active pair unregisters the
+must be available. [observed 2026-10-13] Android additionally checks explicit
+exercise, distance and background-read grants, plus sufficient history, both
+at registration and in the worker. Revoking them unregisters the job while preserving mileage. Retiring or removing the last active pair unregisters the
 job. App Clips exclude both packages from native autolinking and skip their
 JavaScript imports. Missing native modules and unsupported platforms retain
 foreground-only behavior.
@@ -320,7 +324,9 @@ record remains in `diaries/2026-10-13-expo-background-health-sync.md`.
    run in these?" sits under the PDP's details and reviews.
 2. **Start date.** The system compact date picker on iOS (`@expo/ui`
    `DatePicker`, no future dates). Presets ("2 weeks ago", "1 month ago", …)
-   on Android and web, where the date matters less because Health is not read.
+   on web. [observed 2026-10-13] Android now uses the native Material date
+  picker through `@expo/ui/community/datetime-picker`, because Health Connect
+  counts from the exact date.
 3. **Miles already on them.** Optional.
 4. **Replace at.** 300, 400 or 500 miles. With Health, also which workouts
    count.
