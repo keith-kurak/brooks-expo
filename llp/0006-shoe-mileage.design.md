@@ -79,11 +79,10 @@ The miles from the last Health read are cached next to the pairs
 a cold launch would show "0 mi" until the background read finished, and the
 widget would have nothing to show while the app is closed.
 
-[observed 2026-10-12] On current iOS builds, `BrooksActivity` owns the
-authoritative mileage snapshot in the full app's private `UserDefaults`.
-SQLite retains the shoe list and a cache of the totals. The native snapshot
-imports the old SQLite totals once, then wins on every launch and foreground
-return. See [Background Health sync](#background-health-sync).
+[observed 2026-10-13] SQLite owns both the shoe list and cached totals again.
+Foreground and Expo BackgroundTask reads use the same JavaScript store and
+widget publisher. The earlier native snapshot owner is superseded; see
+[Background Health sync](#background-health-sync).
 
 ## Mileage is workout distance
 
@@ -94,13 +93,10 @@ workouts it counts, from its start date. The distance is the per-workout
 implementation needed no new native code: `readShoeMiles` asks for enough days to reach the
 oldest start date (at most three years) and filters by `start` in TypeScript.
 
-[observed 2026-10-12] Current iOS builds perform this calculation in Swift,
-including foreground refreshes, so HealthKit can finish a background delivery
-without JavaScript. `ShoeMileageModel.swift` follows the same windows, start
-miles, workout kinds, retirement boundary, pace and replacement threshold.
-`bun run test:health-sync` compares Swift results and widget props against the
-existing TypeScript calculations. The older path remains for older development
-binaries; Android and web still have no Health reader.
+[observed 2026-10-13] Both scheduled and foreground reads use `readShoeMiles`
+and the same TypeScript calculations. Swift only reads Health summaries.
+Android and web still have no Health reader. Steps remain a Finder input,
+not shoe wear.
 
 [inferred] It is not the all-day `distanceWalkingRunning` sum. That sum counts
 every step a phone or watch records, in whatever shoes. A pair's wear comes
@@ -156,9 +152,9 @@ runner retires a pair to close its window. See
    reads only if the sheet has already been answered. LLP 0005's rule holds:
    the app never shows the Health sheet at launch.
 
-[observed 2026-10-12] Background deliveries and protected-data unlocks also
-refresh mileage after Health access has been requested and an active shoe
-exists. They never request authorization. See [Background Health sync](#background-health-sync).
+[observed 2026-10-13] Expo BackgroundTask also refreshes mileage after Health
+access has been requested and an active shoe exists. It never requests
+authorization. See [Background Health sync](#background-health-sync).
 
 HealthKit hides read denials (LLP 0005#healthkit-hides-read-denials), so a
 denied read looks like a pair with no runs. The pair then shows only its
@@ -253,73 +249,65 @@ download works.
 
 ### The widget updates when the app runs
 
-[superseded 2026-10-12] Until background Health sync, only the JavaScript
-store published mileage and the widget caught up on the next foreground visit.
-Foreground refresh remains as a fallback, but native code now also publishes
-after HealthKit deliveries.
+[superseded 2026-10-13] The widget previously caught up only on foreground
+visits, then briefly used native HealthKit observers. It now updates from the
+same JavaScript publisher during foreground and scheduled background runs.
 
 ### Background Health sync
 
-[confirmed — user, 2026-10-12] Add background Health sync for shoe tracking.
+[confirmed — user, 2026-10-13] Use Expo BackgroundTask instead of native
+HealthKit background delivery for simplicity, accepting deferred updates.
 
-[observed 2026-10-12] `BrooksHealthSyncSubscriber`, registered in the local
-module's `expo-module.config.json`, installs observers during app launch,
-before React Native starts. The observer for workouts requests `.immediate`
-delivery; a second observer for `distanceWalkingRunning` requests `.hourly`
-delivery to catch distance arriving after a workout. Steps remain a Finder
-input and do not count toward shoe wear.
+[observed] `index.ts` imports `src/store/shoes.ts` before `expo-router/entry`.
+The store defines `brooks.shoe-mileage` at module scope, so a headless launch
+can run it without mounting React components. The task calls `refreshMileage`
+without `ask`, persists totals in SQLite and publishes through the public
+`expo-widgets` `updateSnapshot` API. Foreground refresh uses the same code.
+There is one mileage calculation and no custom native timeline writer.
 
-[observed] The module persists whether the Health authorization sheet has
-been answered. It registers delivery only when that flag is set and an active
-pair exists. Retiring or removing the last active pair stops its observers and
-disables those two deliveries. The App Clip is excluded both by autolinking
-and by runtime guards. No prompt appears during launch or a background wake.
+[observed] Scheduling requests a 60-minute minimum interval. Registration is
+serialized and checks current state: Health's sheet must already have been
+answered, at least one pair must be active, and TaskManager/BackgroundTask
+must be available. Retiring or removing the last active pair unregisters the
+job. App Clips exclude both packages from native autolinking and skip their
+JavaScript imports. Missing native modules and unsupported platforms retain
+foreground-only behavior.
 
-[observed] `ShoeMileageSync` serializes reads and recomputes totals from the
-bounded workout window. Recomputing includes deleted workouts and avoids
-adding the same delivery twice. A shoe change or another delivery during a
-read causes a new pass before the pending callers complete. Failed reads keep
-the previous snapshot and freshness timestamp. A 20-second query timeout
-cancels the read and completes callers; late callbacks are discarded. All
-observer paths call HealthKit's completion handler, including errors.
+[observed] Reads run sequentially. A shoe-list change during a query causes a
+reread against the new list. Recomputing totals handles deleted workouts and
+repeated task executions. A failed read preserves totals and freshness and
+returns `BackgroundTaskResult.Failed`; task errors do the same. A skipped read
+(no prior authorization or no pairs) is a successful no-op. The task never
+opens a permission sheet. Health read denial still looks like an empty store.
 
-[observed] Shoe configuration, photo paths, per-pair aggregates and the read
-timestamp live in the full app's private `UserDefaults`; workout records stay
-in memory only for the query. The app imports native results on launch,
-foreground return and native change events. It never replaces the native
-snapshot with stale SQLite totals after the initial migration. Unlocking
-protected data retries a read that may have failed while Health was locked.
-Health-derived data stays on the device.
+[observed — Expo SDK 57 documentation] iOS chooses when the task runs and can
+defer short intervals until much later. Swiping the app away stops background
+tasks until it is reopened. The scheduler cannot be validated on an iOS
+simulator. `expo-background-task` adds `processing` and its permitted scheduler
+identifier to the full app's Info.plist; the HealthKit background-delivery
+entitlement is removed. This switch requires a new native build, not an OTA
+update to the previous observer binary.
+See [BackgroundTask](https://docs.expo.dev/versions/v57.0.0/sdk/background-task/)
+and [TaskManager](https://docs.expo.dev/versions/v57.0.0/sdk/task-manager/).
 
-[observed — Apple documentation] Delivery is scheduled by iOS, and background
-observer delivery cannot be tested in the simulator. Foreground reads remain
-necessary for catch-up. This change requires a new native build and a
-provisioning profile with `com.apple.developer.healthkit.background-delivery`.
-See [Executing Observer Queries](https://developer.apple.com/documentation/healthkit/executing-observer-queries)
-and [enabling background delivery](https://developer.apple.com/documentation/healthkit/hkhealthstore/enablebackgrounddelivery(for:frequency:withcompletion:)).
+[observed] Health-derived aggregates stay on the device. Workouts exist in
+memory only while reading. The App Group receives the selected pair's display
+props and cached image through the existing widget API.
+
+[inferred] Remaining device verification: install the new signed build on an
+iPhone, add a pair and allow Health, verify task registration, and invoke
+`triggerTaskWorkerForTestingAsync` in a development build. Confirm the widget
+and app agree after adding/deleting a workout. Then background the app and
+verify an actual OS-scheduled run. Repeat with Health locked: the cache should
+survive failed reads and catch up on a subsequent task or foreground refresh.
 
 ### Native widget publishing
 
-[observed 2026-10-12] The widget layout still uses `expo-widgets`. Its Swift
-timeline writer is internal in the installed 57.0.23 package, so
-`MileageWidgetPublisher` implements the small storage contract: one dictionary
-containing `timestamp` in milliseconds and `props`, stored as an array under
-`__expo_widgets_ShoeMileage_timeline` in the configured App Group. It preserves
-the layout registered by `createWidget`, then calls
-`WidgetCenter.reloadTimelines(ofKind: "ShoeMileage")` only if the displayed
-props changed. A contract test checks this against the installed Expo source.
-Recheck the adapter when upgrading `expo-widgets`.
-
-[observed] The full app caches photos for all active pairs, so a background
-change can choose a different most-worn pair without downloading an image.
-The shared App Group still receives only one pair's display props and photos;
-the private mileage snapshot is not shared with the widget or Clip.
-
-[inferred] Remaining device verification: install a signed build on an iPhone,
-connect Health, add a pair and its widget, background Brooks, then save and
-delete a workout from a different Health-writing app. Check that the widget
-and the next foreground snapshot agree. Repeat with Health locked, then
-unlock. Simulator checks cannot establish the delivery timing of these cases.
+[Superseded 2026-10-13] The previous HealthKit observer implementation wrote
+Expo's private App Group timeline format from Swift and maintained a native
+snapshot. Those components and their contract tests have been removed in
+favor of Expo BackgroundTask and the public widget API. The original validation
+record remains in `diaries/2026-10-13-expo-background-health-sync.md`.
 
 ## Adding a pair
 
@@ -354,7 +342,15 @@ unlock. Simulator checks cannot establish the delivery timing of these cases.
 
 ## Verified
 
-[observed 2026-10-13] The background-sync implementation passed its Swift/JS
+[observed 2026-10-13 — Expo BackgroundTask replacement] Four integration tests
+with 27 assertions passed for task registration, shared reads, deletion,
+failure and concurrent shoe changes. TypeScript, iOS/Android bundle exports,
+React Doctor and the signed iOS simulator build passed. Generated configuration
+contains Expo's scheduler identifier and processing mode; the Clip omits the
+two task modules. This does not verify real scheduler execution. See
+`diaries/2026-10-13-expo-background-task-simplification.md`.
+
+[Superseded 2026-10-13 — native observer implementation] The previous implementation passed its Swift/JS
 fixture and coordinator tests (108 assertions), TypeScript checking, React
 Doctor and a signed iOS simulator build. In the iOS 26.5 simulator, 24 seeded
 runs produced 176 Health miles. The native snapshot, JS store, Shoes tab and

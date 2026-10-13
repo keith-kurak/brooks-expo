@@ -11,6 +11,9 @@ exclude = [
   # App Clips cannot carry a widget, and the JS treats a missing module as
   # "no widget".
   "expo-widgets",
+  # Background processing belongs to the full app; JS guards these imports.
+  "expo-background-task",
+  "expo-task-manager",
 ]
 use_expo_modules!(exclude: exclude)
 

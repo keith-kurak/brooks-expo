@@ -9,11 +9,13 @@
  *
  * Every change republishes the widget. @ref LLP 0006#the-widget-reads-the-app-group
  */
+import { requireOptionalNativeModule } from 'expo';
 import * as Linking from 'expo-linking';
 import { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
 import BrooksActivity from '../../modules/brooks-activity/src/BrooksActivityModule';
+import { isAppClip } from '../utils/app-clip';
 import {
   formatMileage,
   mileageOf,
@@ -26,13 +28,19 @@ import { catalog } from '../data/catalog';
 import { brooksImage, heroImage } from '../data/images';
 import { byId, colorwayOf } from '../data/query';
 import { shoeImageFile, updateShoeMileageWidget } from '../widgets/shoe-mileage';
-import { isAppClip } from '../utils/app-clip';
 
 const SHOES_KEY = 'brooks.shoes.v1';
 const MILES_KEY = 'brooks.shoes.miles.v1';
-const nativeMileage = !isAppClip && BrooksActivity?.isAvailable() &&
-  BrooksActivity.configureShoeMileage && BrooksActivity.getShoeMileageSnapshot &&
-  BrooksActivity.refreshShoeMileageAsync ? BrooksActivity : null;
+const HEALTH_SYNC_TASK = 'brooks.shoe-mileage';
+
+// The Clip and older development binaries can omit these native modules.
+const background = !isAppClip && BrooksActivity?.isAvailable() &&
+  requireOptionalNativeModule('ExpoBackgroundTask') && requireOptionalNativeModule('ExpoTaskManager')
+  ? {
+      tasks: require('expo-task-manager') as typeof import('expo-task-manager'),
+      scheduler: require('expo-background-task') as typeof import('expo-background-task'),
+    }
+  : null;
 
 interface StoredMiles {
   byShoe: Record<string, ShoeHealthMiles>;
@@ -53,23 +61,10 @@ const listeners = new Set<() => void>();
 function commit(next: ShoesState) {
   state = next;
   storage.set(SHOES_KEY, state.shoes);
-  publishWidget();
   storage.set<StoredMiles>(MILES_KEY, { byShoe: state.byShoe, readAt: state.readAt });
+  publishWidget();
   for (const l of listeners) l();
-}
-
-function nativeSnapshot(json: string): StoredMiles {
-  const snapshot: StoredMiles = JSON.parse(json);
-  return {
-    byShoe: Object.fromEntries(Object.entries(snapshot.byShoe).map(([id, miles]) => [
-      id, { ...miles, weeklyMiles: miles.weeklyMiles ?? null },
-    ])),
-    readAt: snapshot.readAt ?? null,
-  };
-}
-
-function receiveNativeMileage() {
-  if (nativeMileage) commit({ ...state, ...nativeSnapshot(nativeMileage.getShoeMileageSnapshot!()) });
+  void reconcileBackgroundSync();
 }
 
 export function getShoesState(): ShoesState {
@@ -130,33 +125,52 @@ export function removeShoe(id: string) {
   commit({ ...state, shoes: state.shoes.filter((s) => s.id !== id), byShoe });
 }
 
-let reading: Promise<void> = Promise.resolve();
+let reading: Promise<boolean> = Promise.resolve(true);
+let registering: Promise<void> = Promise.resolve();
+
+/** Keep one scheduled job only while Health has been requested and a pair is active. */
+export function reconcileBackgroundSync(): Promise<void> {
+  registering = registering.then(async () => {
+    if (!background || !(await background.tasks.isAvailableAsync())) return;
+    const registered = await background.tasks.isTaskRegisteredAsync(HEALTH_SYNC_TASK);
+    const shouldRun = activeShoes(state).length > 0 &&
+      !(await BrooksActivity!.shouldRequestAccessAsync());
+    if (!shouldRun) {
+      if (registered) await background.scheduler.unregisterTaskAsync(HEALTH_SYNC_TASK);
+    } else if (!registered && await background.scheduler.getStatusAsync() === background.scheduler.BackgroundTaskStatus.Available) {
+      await background.scheduler.registerTaskAsync(HEALTH_SYNC_TASK, { minimumInterval: 60 });
+    }
+  }).catch(() => {
+    // Foreground mileage still works if scheduling is unavailable. Retry next time.
+  });
+  return registering;
+}
 
 /**
- * Reads Health again and stores each pair's miles. `ask` may show the Health
- * sheet; pass it only from a tap. Failures keep the last read: stale miles are
- * better than none.
- *
- * Reads run one after another. A read that is already running started before
- * the latest change (a pair just added) and without `ask`, so a new call
- * queues behind it rather than reusing it.
+ * Both foreground refresh and the scheduled task use the same read, cache and
+ * widget publisher. A failed read keeps the previous totals and timestamp.
+ * `ask` is only passed by a user tap; the background task never prompts.
+ * @ref LLP 0006#background-health-sync
  */
-export function refreshMileage({ ask = false }: { ask?: boolean } = {}): Promise<void> {
-  if (isAppClip) return Promise.resolve();
+export function refreshMileage({ ask = false }: { ask?: boolean } = {}): Promise<boolean> {
+  if (isAppClip) return Promise.resolve(true);
   reading = reading.then(async () => {
     try {
-      if (nativeMileage) {
-        receiveNativeMileage();
-        if (ask) await nativeMileage.requestAccessAsync();
-        await nativeMileage.refreshShoeMileageAsync!();
-        // Read the current snapshot, not an earlier queued event's payload.
-        receiveNativeMileage();
-        return;
-      }
-      const read = await readShoeMiles(state.shoes, { ask });
+      // A pair can be added, retired or removed while Health is reading. Reread
+      // against the new list rather than committing totals for the old window.
+      let shoes: OwnedShoe[];
+      let read: Record<string, ShoeHealthMiles> | null;
+      do {
+        shoes = state.shoes;
+        read = await readShoeMiles(shoes, { ask });
+        ask = false;
+      } while (shoes !== state.shoes);
       if (read) commit({ ...state, byShoe: read, readAt: Date.now() });
+      return true;
     } catch {
-      // Keep the last read.
+      return false;
+    } finally {
+      void reconcileBackgroundSync();
     }
   });
   return reading;
@@ -168,21 +182,17 @@ export function refreshMileage({ ask = false }: { ask?: boolean } = {}): Promise
  * away. Never asks: it reads only once the shopper has answered the Health
  * sheet from a tap. Mounted once, by the root layout.
  *
- * @ref LLP 0006#background-health-sync — Native code also refreshes while JS
- * is suspended. Import that result before the foreground read or any publish.
+ * @ref LLP 0006#background-health-sync — Foreground refresh catches up
+ * even when iOS has deferred the scheduled background task.
  */
 export function useMileageSync() {
   useEffect(() => {
     if (isAppClip) return;
-    const health = nativeMileage?.addListener('onShoeMileageUpdated', receiveNativeMileage);
     refreshMileage();
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') refreshMileage();
     });
-    return () => {
-      health?.remove();
-      sub.remove();
-    };
+    return () => sub.remove();
   }, []);
 }
 
@@ -193,18 +203,6 @@ export function useMileageSync() {
  */
 function publishWidget() {
   if (isAppClip) return;
-  // Keep only shoe configuration and cached photo paths in native storage.
-  // Native code owns the totals and widget publication on current iOS builds.
-  // @ref LLP 0006#background-health-sync
-  if (nativeMileage) {
-    const configuration = {
-      shoes: state.shoes.map((shoe) => ({ ...shoe, image: shoe.retiredAt == null ? widgetPhoto(shoe) ?? '' : '' })),
-      url: Linking.createURL('/(tabs)/(shoes)/shoes'),
-    };
-    const initial = { byShoe: state.byShoe, readAt: state.readAt };
-    state = { ...state, ...nativeSnapshot(nativeMileage.configureShoeMileage!(JSON.stringify(configuration), JSON.stringify(initial))) };
-    return;
-  }
   const shoe = mostWornShoe(state);
   // The groups are named on purpose: a bare `/shoes` matches the first clone
   // of the array group, so it pushed the screen onto Home's stack, with a
@@ -245,8 +243,17 @@ function widgetPhoto(shoe: OwnedShoe): string | null {
   // Square: the CDN ignores a 2:1 box and returns a square anyway. The widget
   // crops it to the shoe.
   const url = brooksImage(heroImage(colorway.images), { width: 600 });
-  return shoeImageFile(`${product.id}-${colorway.code}-600`, url, () => commit(state));
+  return shoeImageFile(`${product.id}-${colorway.code}-600`, url, publishWidget);
 }
 
 /** The app pushes the stored state once at launch, so a reinstall or an update repaints the widget. */
 publishWidget();
+
+// Imported by index.ts before Expo Router, so a headless launch defines the
+// task without mounting a screen. @ref LLP 0006#background-health-sync
+background?.tasks.defineTask(HEALTH_SYNC_TASK, async ({ error }) => {
+  const { BackgroundTaskResult } = background.scheduler;
+  if (error) return BackgroundTaskResult.Failed;
+  if (!activeShoes(state).length) return BackgroundTaskResult.Success;
+  return await refreshMileage() ? BackgroundTaskResult.Success : BackgroundTaskResult.Failed;
+});

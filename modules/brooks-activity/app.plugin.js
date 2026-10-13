@@ -2,8 +2,7 @@
  * Config plugin for the local brooks-activity module.
  *
  * @ref LLP 0005#read-only-by-default — Adds the HealthKit entitlement and both
- * Health usage strings. @ref LLP 0006#background-health-sync — Background
- * delivery now keeps shoe mileage current while the app is suspended. App Store
+ * Health usage strings, and nothing else: no background delivery. App Store
  * Connect rejects a HealthKit app without `NSHealthUpdateUsageDescription`
  * (ITMS-90683) even when the store binary never writes, so the write string is
  * always present. The store binary stays read-only because the Swift write
@@ -22,7 +21,8 @@ const UPDATE_DESCRIPTION =
 module.exports = function withBrooksActivity(config) {
   config = withEntitlementsPlist(config, (config) => {
     config.modResults['com.apple.developer.healthkit'] = true;
-    config.modResults['com.apple.developer.healthkit.background-delivery'] = true;
+    // Remove the previous observer implementation's entitlement on incremental prebuild.
+    delete config.modResults['com.apple.developer.healthkit.background-delivery'];
     return config;
   });
 

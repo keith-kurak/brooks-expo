@@ -16,9 +16,8 @@
   output. `brand.config.js` owns both native identifiers:
   `com.exponathan.ecommercedemo`. The old `com.exponathan.brooks` identity and
   Android mismatch guidance are superseded.
-- `bun run test:health-sync` runs Bun assertions plus a Swift test executable
-  for native sync persistence, errors, concurrency and TS calculation parity.
-  It requires macOS and Swift. TypeScript is checked with `bun run typecheck`;
+- `bun run test:health-sync` runs Bun tests for Expo task registration, shared
+  foreground/background reads, errors, deletions and concurrent shoe changes. TypeScript is checked with `bun run typecheck`;
   app UI is validated interactively with Argent. Existing visual
   baselines live under `.baselines/ios` and `.baselines/android`.
 - iOS 27.x simulators crash dev builds at launch (no `UIApplicationSceneManifest`
@@ -71,7 +70,8 @@ fields retained for subsequent native work:
 }
 ```
 
-[observed] HealthKit background delivery needs a signed physical-device check;
-Apple does not support background observer delivery in the simulator. Keep
-the foreground sync fallback and never claim simulator evidence proves a
-background wake. See LLP 0006#background-health-sync.
+[observed 2026-10-13] Shoe sync uses Expo BackgroundTask with a 60-minute
+minimum interval, not HealthKit observer delivery. `index.ts` defines the task
+before Router loads. Real scheduler execution needs an iPhone; simulator
+checks cannot prove a background wake. Keep foreground catch-up. See LLP
+0006#background-health-sync.

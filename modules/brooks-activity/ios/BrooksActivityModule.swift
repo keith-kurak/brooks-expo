@@ -17,50 +17,8 @@ public class BrooksActivityModule: Module {
   public func definition() -> ModuleDefinition {
     Name("BrooksActivity")
 
-    Events("onShoeMileageUpdated")
-
-    OnStartObserving("onShoeMileageUpdated") {
-      NotificationCenter.default.addObserver(self, selector: #selector(self.mileageChanged), name: shoeMileageUpdated, object: nil)
-    }
-    OnStopObserving("onShoeMileageUpdated") {
-      NotificationCenter.default.removeObserver(self, name: shoeMileageUpdated, object: nil)
-    }
-    OnDestroy {
-      NotificationCenter.default.removeObserver(self)
-    }
-
     Function("isAvailable") {
-      return BrooksHealthSync.isFullApp && HKHealthStore.isHealthDataAvailable()
-    }
-
-    Function("configureShoeMileage") { (configuration: String, initialSnapshot: String) -> String in
-      try ensureAvailable()
-      let config = try JSONDecoder().decode(MileageConfiguration.self, from: Data(configuration.utf8))
-      guard Set(config.shoes.map(\.id)).count == config.shoes.count else {
-        throw NSError(domain: "BrooksMileage", code: 2, userInfo: [NSLocalizedDescriptionKey: "Duplicate shoe IDs"])
-      }
-      let initial = try JSONDecoder().decode(MileageSnapshot.self, from: Data(initialSnapshot.utf8))
-      let result = try BrooksHealthSync.shared.sync.configure(config, initial: initial)
-      BrooksHealthSync.shared.updateObservers()
-      return result
-    }
-
-    Function("getShoeMileageSnapshot") { () -> String in
-      try BrooksHealthSync.shared.sync.snapshotJSON()
-    }
-
-    AsyncFunction("refreshShoeMileageAsync") { () async throws -> String in
-      try ensureAvailable()
-      let status = try await store.statusForAuthorizationRequest(toShare: [], read: readTypes)
-      if status != .shouldRequest {
-        BrooksHealthSync.shared.enable()
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-          BrooksHealthSync.shared.sync.refresh { result in
-            continuation.resume(with: result.map { _ in () })
-          }
-        }
-      }
-      return try BrooksHealthSync.shared.sync.snapshotJSON()
+      return Bundle.main.object(forInfoDictionaryKey: "NSAppClip") == nil && HKHealthStore.isHealthDataAvailable()
     }
 
     // True when the system sheet would appear, false when the user has already
@@ -130,16 +88,12 @@ public class BrooksActivityModule: Module {
 
   // MARK: - Queries
 
-  @objc private func mileageChanged() {
-    sendEvent("onShoeMileageUpdated", [:])
-  }
-
   private var readTypes: Set<HKObjectType> {
     [HKObjectType.workoutType(), HKQuantityType(.stepCount), HKQuantityType(.distanceWalkingRunning)]
   }
 
   private func ensureAvailable() throws {
-    guard BrooksHealthSync.isFullApp, HKHealthStore.isHealthDataAvailable() else {
+    guard Bundle.main.object(forInfoDictionaryKey: "NSAppClip") == nil, HKHealthStore.isHealthDataAvailable() else {
       throw HealthUnavailableException()
     }
   }

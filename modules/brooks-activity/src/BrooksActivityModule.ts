@@ -2,7 +2,7 @@ import { type NativeModule, requireOptionalNativeModule } from 'expo';
 
 import type { ActivityWorkout, DailySteps } from './BrooksActivity.types';
 
-declare class BrooksActivityModule extends NativeModule<{ onShoeMileageUpdated: () => void }> {
+declare class BrooksActivityModule extends NativeModule<{}> {
   /** False on iPads without Health and on every non-iOS platform. */
   isAvailable(): boolean;
   /** True when the system sheet would still appear. */
@@ -17,11 +17,6 @@ declare class BrooksActivityModule extends NativeModule<{ onShoeMileageUpdated: 
   getWorkoutsAsync(days: number): Promise<ActivityWorkout[]>;
   /** One entry per day for the last `days` days, oldest first. */
   getDailyStepsAsync(days: number): Promise<DailySteps[]>;
-  /** Native-owned mileage, shared by foreground and background Health reads.
-   * Optional while an older development binary is still installed. */
-  configureShoeMileage?(configuration: string, initialSnapshot: string): string;
-  getShoeMileageSnapshot?(): string;
-  refreshShoeMileageAsync?(): Promise<string>;
   /**
    * Debug builds only; undefined in Release. Replaces this app's samples with
    * eight weeks of sample data.

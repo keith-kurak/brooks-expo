@@ -1,93 +1,130 @@
-import { afterAll, expect, mock, test } from 'bun:test';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { beforeEach, expect, mock, test } from 'bun:test';
 
-mock.module('../../../modules/brooks-activity/src/BrooksActivityModule', () => ({ default: null }));
-const { sumFor, mileageOf, formatMileage } = await import('../../../src/data/mileage');
+const persisted = new Map<string, unknown>();
+let permissionNeeded = true;
+let registered = false;
+let available = true;
+let executor: (body: { error?: unknown }) => Promise<number>;
+let props: any;
+let workouts: any[] = [];
+const requestAccess = mock(async () => { permissionNeeded = false; });
+const getWorkouts = mock(async () => workouts);
+const register = mock(async (_name: string, _options: unknown) => { registered = true; });
+const unregister = mock(async () => { registered = false; });
 
-const temp = mkdtempSync(join(tmpdir(), 'brooks-health-tests-'));
-afterAll(() => rmSync(temp, { recursive: true, force: true }));
-const native = 'modules/brooks-activity/ios';
-const executable = join(temp, 'health-sync-tests');
-const now = 1_800_000_000_000;
-const day = 86_400_000;
-const base = {
-  id: 'one', name: 'Ghost', productId: null, colorCode: null, addedAt: now,
-  startedAt: now - 40 * day, startMiles: 200, limitMiles: 300,
-  kinds: ['run'], retiredAt: null, image: '',
-};
-const workouts = [
-  { kind: 'run', start: base.startedAt - 1, distanceMeters: 20 * 1609.344 },
-  { kind: 'run', start: base.startedAt, distanceMeters: 5 * 1609.344 },
-  { kind: 'run', start: now - 7 * day, distanceMeters: 7 * 1609.344 },
-  { kind: 'walk', start: now - 3 * day, distanceMeters: 3 * 1609.344 },
-  { kind: 'hike', start: now - 2 * day, distanceMeters: 4 * 1609.344 },
-  { kind: 'run', start: now - day, distanceMeters: null },
-];
-const fixtures = [
-  { shoes: [base], workouts, now },
-  { shoes: [{ ...base, kinds: ['run', 'walk', 'hike'] }], workouts, now },
-  { shoes: [{ ...base, retiredAt: now - 7 * day }], workouts, now },
-  { shoes: [{ ...base, startedAt: now - 2 * day }], workouts, now },
-  { shoes: [{ ...base, startMiles: 1200, limitMiles: 500 }], workouts: [], now },
-  { shoes: [{ ...base, startMiles: 209.999, limitMiles: 300 }], workouts: [], now },
-  { shoes: [{ ...base, startMiles: 210, limitMiles: 300 }], workouts: [], now },
-  { shoes: [base, { ...base, id: 'two', startMiles: 350, limitMiles: 400, image: 'file:///shoe.png' }], workouts, now },
-  { shoes: [], workouts, now },
-];
+mock.module('expo', () => ({ requireOptionalNativeModule: () => ({}) }));
+mock.module('expo-linking', () => ({ createURL: (path: string) => `ecomdemo://${path}` }));
+mock.module('react-native', () => ({ AppState: { addEventListener: () => ({ remove() {} }) } }));
+mock.module('expo-task-manager', () => ({
+  defineTask: (_name: string, callback: typeof executor) => { executor = callback; },
+  isAvailableAsync: async () => true,
+  isTaskRegisteredAsync: async () => registered,
+}));
+mock.module('expo-background-task', () => ({
+  BackgroundTaskStatus: { Available: 2, Restricted: 1 },
+  BackgroundTaskResult: { Success: 1, Failed: 2 },
+  getStatusAsync: async () => available ? 2 : 1,
+  registerTaskAsync: register,
+  unregisterTaskAsync: unregister,
+}));
+mock.module('../../../modules/brooks-activity/src/BrooksActivityModule', () => ({ default: {
+  isAvailable: () => true,
+  shouldRequestAccessAsync: async () => permissionNeeded,
+  requestAccessAsync: requestAccess,
+  getWorkoutsAsync: getWorkouts,
+} }));
+mock.module('../../../src/utils/app-clip', () => ({ isAppClip: false }));
+mock.module('../../../src/utils/kv-storage', () => ({ storage: {
+  get: (key: string, fallback: unknown) => persisted.get(key) ?? fallback,
+  set: (key: string, value: unknown) => persisted.set(key, value),
+} }));
+mock.module('../../../src/widgets/shoe-mileage', () => ({
+  updateShoeMileageWidget: (value: unknown) => { props = value; },
+  shoeImageFile: () => null,
+}));
+const shoes = await import('../../../src/store/shoes');
+const pair = () => shoes.addShoe({
+  name: 'Ghost', productId: null, colorCode: null, startedAt: Date.now() - 56 * 86_400_000,
+  startMiles: 200, limitMiles: 300, kinds: ['run'],
+});
 
-test('native sync preserves data through errors, concurrent deliveries, relaunch, deletion and timeout', () => {
-  const build = spawnSync('swiftc', [`${native}/ShoeMileageModel.swift`, `${native}/ShoeMileageSync.swift`,
-    'tools/tests/health-sync/main.swift', '-o', executable], { encoding: 'utf8' });
-  expect(build.status, build.stderr).toBe(0);
-  const input = join(temp, 'fixtures.json');
-  const output = join(temp, 'results.json');
-  writeFileSync(input, JSON.stringify(fixtures));
-  const run = spawnSync(executable, [input, output], { encoding: 'utf8', timeout: 15000 });
-  expect(run.status, `${run.stderr}\n${run.stdout}\n${run.error ?? ''} ${run.signal ?? ''}`).toBe(0);
-  const results = JSON.parse(readFileSync(output, 'utf8'));
-  for (const [index, fixture] of fixtures.entries()) {
-    let mostWorn = null;
-    for (const shoe of fixture.shoes) {
-      const expected = sumFor(shoe, fixture.workouts, fixture.now);
-      const actual = results[index].snapshot.byShoe[shoe.id];
-      expect(actual.miles).toBeCloseTo(expected.miles, 9);
-      expect(actual.workouts).toBe(expected.workouts);
-      if (expected.weeklyMiles == null) expect(actual.weeklyMiles ?? null).toBeNull();
-      else expect(actual.weeklyMiles).toBeCloseTo(expected.weeklyMiles, 9);
-      const mileage = mileageOf(shoe, expected);
-      if (shoe.retiredAt == null && (!mostWorn || mileage.share > mostWorn.mileage.share)) mostWorn = { shoe, mileage };
-    }
-    const widget = results[index].widget;
-    expect(widget.hasShoe).toBe(!!mostWorn);
-    if (!mostWorn) continue;
-    const { shoe, mileage: m } = mostWorn;
-    expect(widget.name).toBe(shoe.name);
-    expect(widget.image).toBe(shoe.image);
-    expect(widget.miles).toBe(m.milesLabel);
-    expect(widget.milesShort).toBe(formatMileage(m.totalMiles));
-    expect(widget.share).toBeCloseTo(Math.min(1, m.share), 9);
-    expect(widget.percent).toBe(`${m.percent}%`);
-    expect(widget.replace).toBe(m.replace);
-    expect(widget.status).toBe(m.replace ? 'Time to replace' : `${formatMileage(m.milesLeft)} mi left`);
-    const weeks = m.weeksLeft == null || m.milesLeft <= 0 ? null : Math.max(1, Math.round(m.weeksLeft));
-    expect(widget.pace).toBe(weeks == null ? '' : `About ${weeks} ${weeks === 1 ? 'week' : 'weeks'} left`);
-  }
-}, 30000);
+beforeEach(async () => {
+  for (const shoe of shoes.getShoesState().shoes) shoes.removeShoe(shoe.id);
+  await shoes.reconcileBackgroundSync();
+  permissionNeeded = true;
+  available = true;
+  registered = false;
+  workouts = [];
+  requestAccess.mockClear();
+  register.mockClear();
+  unregister.mockClear();
+  getWorkouts.mockReset();
+  getWorkouts.mockImplementation(async () => workouts);
+});
 
-test('native widget adapter matches the installed Expo Widgets timeline contract', () => {
-  const root = resolve('node_modules/expo-widgets');
-  const writer = readFileSync(join(root, 'ios/WidgetObject.swift'), 'utf8');
-  const records = readFileSync(join(root, 'ios/WidgetsRecords.swift'), 'utf8');
-  const storage = readFileSync(join(root, 'ios/WidgetsStorage.swift'), 'utf8');
-  const parser = readFileSync(join(root, 'ios/Widgets/Utils.swift'), 'utf8');
-  expect(writer).toContain('__expo_widgets_\\(name)_timeline');
-  expect(writer).toContain('__expo_widgets_\\(name)_layout');
-  expect(records).toContain('@Field var timestamp: Int');
-  expect(records).toContain('@Field var props: [String: Any]');
-  expect(storage).toContain('ExpoWidgetsAppGroupIdentifier');
-  expect(storage).toContain('UserDefaults(suiteName: appGroupIdentifier)');
-  expect(parser).toContain('Double(timestamp) / 1000');
+test('registers only after authorization, once; removes the job after the last pair retires', async () => {
+  const shoe = pair();
+  await shoes.reconcileBackgroundSync();
+  expect(register).not.toHaveBeenCalled();
+  expect(requestAccess).not.toHaveBeenCalled();
+  await shoes.refreshMileage({ ask: true });
+  await shoes.reconcileBackgroundSync();
+  expect(register).toHaveBeenCalledWith('brooks.shoe-mileage', { minimumInterval: 60 });
+  expect(requestAccess).toHaveBeenCalledTimes(1);
+  await shoes.refreshMileage();
+  await shoes.reconcileBackgroundSync();
+  expect(register).toHaveBeenCalledTimes(1);
+  shoes.retireShoe(shoe.id);
+  await shoes.reconcileBackgroundSync();
+  expect(unregister).toHaveBeenCalledTimes(1);
+});
+
+test('headless task publishes recomputed mileage, handles deletions and preserves cache on failure', async () => {
+  const shoe = pair();
+  permissionNeeded = false;
+  workouts = [{ kind: 'run', start: Date.now() - 86_400_000, distanceMeters: 10 * 1609.344 }];
+  expect(await executor({})).toBe(1);
+  expect(shoes.getShoesState().byShoe[shoe.id].miles).toBeCloseTo(10);
+  expect(props.miles).toBe('210 of 300 mi');
+  expect(persisted.get('brooks.shoes.miles.v1')).toEqual({
+    byShoe: shoes.getShoesState().byShoe, readAt: shoes.getShoesState().readAt,
+  });
+  expect(await executor({})).toBe(1);
+  expect(props.miles).toBe('210 of 300 mi');
+  workouts = [];
+  expect(await executor({})).toBe(1);
+  expect(props.miles).toBe('200 of 300 mi');
+  const previous = shoes.getShoesState();
+  getWorkouts.mockRejectedValueOnce(new Error('Health data locked'));
+  expect(await executor({})).toBe(2);
+  expect(shoes.getShoesState()).toBe(previous);
+  expect(await executor({ error: new Error('task failed') })).toBe(2);
+  expect(requestAccess).not.toHaveBeenCalled();
+});
+
+test('rereads after a shoe is removed during an in-flight query', async () => {
+  const shoe = pair();
+  permissionNeeded = false;
+  let finish!: (value: any[]) => void;
+  getWorkouts.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  const read = shoes.refreshMileage();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  shoes.removeShoe(shoe.id);
+  finish([{ kind: 'run', start: Date.now(), distanceMeters: 1609.344 }]);
+  expect(await read).toBe(true);
+  expect(shoes.getShoesState().byShoe[shoe.id]).toBeUndefined();
+  expect(props.hasShoe).toBe(false);
+});
+
+test('restricted scheduling leaves foreground reads working and background never requests permission', async () => {
+  const shoe = pair();
+  available = false;
+  expect(await executor({})).toBe(1);
+  expect(getWorkouts).not.toHaveBeenCalled();
+  expect(requestAccess).not.toHaveBeenCalled();
+  permissionNeeded = false;
+  expect(await shoes.refreshMileage()).toBe(true);
+  await shoes.reconcileBackgroundSync();
+  expect(register).not.toHaveBeenCalled();
+  expect(shoes.getShoesState().byShoe[shoe.id].miles).toBe(0);
 });
