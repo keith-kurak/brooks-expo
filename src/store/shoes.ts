@@ -13,6 +13,7 @@ import * as Linking from 'expo-linking';
 import { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
+import BrooksActivity from '../../modules/brooks-activity/src/BrooksActivityModule';
 import {
   formatMileage,
   mileageOf,
@@ -25,9 +26,13 @@ import { catalog } from '../data/catalog';
 import { brooksImage, heroImage } from '../data/images';
 import { byId, colorwayOf } from '../data/query';
 import { shoeImageFile, updateShoeMileageWidget } from '../widgets/shoe-mileage';
+import { isAppClip } from '../utils/app-clip';
 
 const SHOES_KEY = 'brooks.shoes.v1';
 const MILES_KEY = 'brooks.shoes.miles.v1';
+const nativeMileage = !isAppClip && BrooksActivity?.isAvailable() &&
+  BrooksActivity.configureShoeMileage && BrooksActivity.getShoeMileageSnapshot &&
+  BrooksActivity.refreshShoeMileageAsync ? BrooksActivity : null;
 
 interface StoredMiles {
   byShoe: Record<string, ShoeHealthMiles>;
@@ -48,9 +53,23 @@ const listeners = new Set<() => void>();
 function commit(next: ShoesState) {
   state = next;
   storage.set(SHOES_KEY, state.shoes);
-  storage.set<StoredMiles>(MILES_KEY, { byShoe: state.byShoe, readAt: state.readAt });
   publishWidget();
+  storage.set<StoredMiles>(MILES_KEY, { byShoe: state.byShoe, readAt: state.readAt });
   for (const l of listeners) l();
+}
+
+function nativeSnapshot(json: string): StoredMiles {
+  const snapshot: StoredMiles = JSON.parse(json);
+  return {
+    byShoe: Object.fromEntries(Object.entries(snapshot.byShoe).map(([id, miles]) => [
+      id, { ...miles, weeklyMiles: miles.weeklyMiles ?? null },
+    ])),
+    readAt: snapshot.readAt ?? null,
+  };
+}
+
+function receiveNativeMileage() {
+  if (nativeMileage) commit({ ...state, ...nativeSnapshot(nativeMileage.getShoeMileageSnapshot!()) });
 }
 
 export function getShoesState(): ShoesState {
@@ -123,8 +142,17 @@ let reading: Promise<void> = Promise.resolve();
  * queues behind it rather than reusing it.
  */
 export function refreshMileage({ ask = false }: { ask?: boolean } = {}): Promise<void> {
+  if (isAppClip) return Promise.resolve();
   reading = reading.then(async () => {
     try {
+      if (nativeMileage) {
+        receiveNativeMileage();
+        if (ask) await nativeMileage.requestAccessAsync();
+        await nativeMileage.refreshShoeMileageAsync!();
+        // Read the current snapshot, not an earlier queued event's payload.
+        receiveNativeMileage();
+        return;
+      }
       const read = await readShoeMiles(state.shoes, { ask });
       if (read) commit({ ...state, byShoe: read, readAt: Date.now() });
     } catch {
@@ -140,16 +168,21 @@ export function refreshMileage({ ask = false }: { ask?: boolean } = {}): Promise
  * away. Never asks: it reads only once the shopper has answered the Health
  * sheet from a tap. Mounted once, by the root layout.
  *
- * @ref LLP 0006#the-widget-updates-when-the-app-runs — There is no
- * background read. The widget shows the last number the app computed.
+ * @ref LLP 0006#background-health-sync — Native code also refreshes while JS
+ * is suspended. Import that result before the foreground read or any publish.
  */
 export function useMileageSync() {
   useEffect(() => {
+    if (isAppClip) return;
+    const health = nativeMileage?.addListener('onShoeMileageUpdated', receiveNativeMileage);
     refreshMileage();
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') refreshMileage();
     });
-    return () => sub.remove();
+    return () => {
+      health?.remove();
+      sub.remove();
+    };
   }, []);
 }
 
@@ -159,6 +192,19 @@ export function useMileageSync() {
  * @ref LLP 0006#the-widget-reads-the-app-group
  */
 function publishWidget() {
+  if (isAppClip) return;
+  // Keep only shoe configuration and cached photo paths in native storage.
+  // Native code owns the totals and widget publication on current iOS builds.
+  // @ref LLP 0006#background-health-sync
+  if (nativeMileage) {
+    const configuration = {
+      shoes: state.shoes.map((shoe) => ({ ...shoe, image: shoe.retiredAt == null ? widgetPhoto(shoe) ?? '' : '' })),
+      url: Linking.createURL('/(tabs)/(shoes)/shoes'),
+    };
+    const initial = { byShoe: state.byShoe, readAt: state.readAt };
+    state = { ...state, ...nativeSnapshot(nativeMileage.configureShoeMileage!(JSON.stringify(configuration), JSON.stringify(initial))) };
+    return;
+  }
   const shoe = mostWornShoe(state);
   // The groups are named on purpose: a bare `/shoes` matches the first clone
   // of the array group, so it pushed the screen onto Home's stack, with a
@@ -199,7 +245,7 @@ function widgetPhoto(shoe: OwnedShoe): string | null {
   // Square: the CDN ignores a 2:1 box and returns a square anyway. The widget
   // crops it to the shoe.
   const url = brooksImage(heroImage(colorway.images), { width: 600 });
-  return shoeImageFile(`${product.id}-${colorway.code}-600`, url, publishWidget);
+  return shoeImageFile(`${product.id}-${colorway.code}-600`, url, () => commit(state));
 }
 
 /** The app pushes the stored state once at launch, so a reinstall or an update repaints the widget. */

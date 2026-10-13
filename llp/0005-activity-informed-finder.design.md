@@ -128,9 +128,10 @@ surface: read-only access to three data types.
 
 - It needs only `expo-modules-core`, which the app already has. The HealthKit
   library also needs `react-native-nitro-modules`.
-- By default, the HealthKit library's config plugin adds the background-delivery
-  entitlement and `NSHealthUpdateUsageDescription`. We want neither in a store
-  build.
+- [superseded 2026-10-12] Avoiding the library's background-delivery entitlement
+  and `NSHealthUpdateUsageDescription` was an original reason for the local
+  module. The usage string became required by App Store validation, and shoe
+  tracking now uses background delivery. See LLP 0006#background-health-sync.
 
 The cost is that we maintain the native code ourselves.
 
@@ -152,9 +153,14 @@ count the same walk. A plain sum would count that walk twice.
 Workout distance comes from `workout.statistics(for: .distanceWalkingRunning)`.
 `HKWorkout.totalDistance` is deprecated from iOS 18.
 
-All interpretation is in TypeScript (`src/data/activity.ts`,
+Finder interpretation is in TypeScript (`src/data/activity.ts`,
 `src/screens/finder/from-activity.ts`). Thresholds can change with Fast
 Refresh, and an Android reader only has to return the same two record shapes.
+
+[observed 2026-10-12] Shoe mileage now also has native configuration, snapshot
+and refresh methods plus change events. Its calculations run in Swift so a
+HealthKit wake can finish while JavaScript is suspended. The Finder still
+uses the original summary methods. See LLP 0006#background-health-sync.
 
 ## Answer only what the data shows
 
@@ -204,7 +210,13 @@ LLP 0006#this-changes-llp-0005s-privacy-rule.
 
 The config plugin (`modules/brooks-activity/app.plugin.js`) adds
 `com.apple.developer.healthkit`, `NSHealthShareUsageDescription` and
-`NSHealthUpdateUsageDescription`. It adds no background delivery.
+`NSHealthUpdateUsageDescription`.
+
+[superseded 2026-10-12] Background delivery was previously excluded.
+[observed] The plugin now adds
+`com.apple.developer.healthkit.background-delivery` for shoe mileage.
+Release builds still request no Health write permissions and contain no
+sample-writing methods. See LLP 0006#background-health-sync.
 
 [observed 2026-09-30] The write string is required even though the store
 build never writes. The first TestFlight upload left it out and App Store

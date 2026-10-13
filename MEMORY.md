@@ -12,13 +12,14 @@
   not clear, look for a stale nested key in `bun.lock` (for example
   `"expo-router/react-native-screens"`), delete it, and reinstall.
 - Metro uses port 8081. `metro.config.js` excludes `tools/` from crawling.
-- Generated iOS and Android native projects are present locally but ignored by
-  git; web uses Metro single output. iOS uses `com.exponathan.brooks` in both
-  `app.json` and the generated native project.
-  Android is mismatched: `app.json` uses `com.exponathan.brooks`, while the
-  generated native project uses `com.brooks.prototype`.
-- No app unit-test or E2E runner is configured. The available static check is
-  TypeScript; app UI is validated interactively with Argent. Existing visual
+- Native projects are generated and ignored by git; web uses Metro single
+  output. `brand.config.js` owns both native identifiers:
+  `com.exponathan.ecommercedemo`. The old `com.exponathan.brooks` identity and
+  Android mismatch guidance are superseded.
+- `bun run test:health-sync` runs Bun assertions plus a Swift test executable
+  for native sync persistence, errors, concurrency and TS calculation parity.
+  It requires macOS and Swift. TypeScript is checked with `bun run typecheck`;
+  app UI is validated interactively with Argent. Existing visual
   baselines live under `.baselines/ios` and `.baselines/android`.
 - iOS 27.x simulators crash dev builds at launch (no `UIApplicationSceneManifest`
   in the generated Info.plist). Verify on an iOS 26.5 simulator, which also has
@@ -28,3 +29,49 @@
   run `bunx expo prebuild --clean -p ios`; `ios/` is generated and gitignored.
 - `expo run:ios --no-bundler` opens the dev client on 8081; to use another
   Metro port, open `exp+ecommerce-demo://expo-development-client/?url=http%3A%2F%2Flocalhost%3A<port>`.
+
+### Environment inspection, 2026-10-12
+
+[observed] Argent environment inspector result, with version and identity
+fields retained for subsequent native work:
+
+```json
+{
+  "is_react_native": true,
+  "is_native_ios": false,
+  "is_native_android": false,
+  "project_type": "Expo SDK 57 / React Native",
+  "supported_platforms": ["ios", "android", "web"],
+  "healthkit_platforms": ["ios"],
+  "widget_platforms": ["ios"],
+  "versions": {
+    "expo": "~57.0.27", "react_native": "0.86.3", "react": "19.2.3",
+    "expo_widgets": "~57.0.23", "node": "22.23.1", "bun": "1.2.22",
+    "cocoapods": "1.16.2"
+  },
+  "commands": {
+    "install": "bun install --frozen-lockfile",
+    "start": "bun run start", "ios": "bun run ios",
+    "android": "bun run android", "web": "bun run web",
+    "typecheck": "bun run typecheck"
+  },
+  "metro": { "default_port": 8081, "excluded_directory": "tools/" },
+  "dependencies": {
+    "node_modules_present": true, "ios_pods_present": true,
+    "has_ios_dir": true, "has_android_dir": false,
+    "ios_workspace": "EcommerceDemo.xcworkspace"
+  },
+  "identity": {
+    "source": "brand.config.js",
+    "ios_bundle_identifier": "com.exponathan.ecommercedemo",
+    "android_package": "com.exponathan.ecommercedemo",
+    "app_group": "group.com.exponathan.ecommercedemo"
+  },
+  "gather_workspace_data": { "status": "succeeded", "required_argument": "workspacePath" }
+}
+```
+
+[observed] HealthKit background delivery needs a signed physical-device check;
+Apple does not support background observer delivery in the simulator. Keep
+the foreground sync fallback and never claim simulator evidence proves a
+background wake. See LLP 0006#background-health-sync.
