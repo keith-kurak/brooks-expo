@@ -275,7 +275,11 @@ quiz.
 shows the health data the app can display. Real data is the default, with an
 option to preview examples.
 
-[observed] Both the guest and member Profile rows now open **Your health**
+[confirmed — user, 2026-10-13] This is a data demo screen. Use data labels and
+values, with no customer pitch, reassurance paragraphs or promotional empty
+headings. The previous customer wording is **Superseded**.
+
+[observed] Both the guest and member Profile rows now open **Health data**
 inside the tab's native stack. The screen reuses `BrooksActivity` and reads
 seven local calendar days, including today. Existing access is reused on entry
 and when the app returns to the foreground. Only **Connect Apple Health** or
@@ -286,7 +290,7 @@ existing Health Connect installation/settings action.
 [observed] The live screen shows total distance and duration for recorded runs,
 walks and hikes, their elevation gain, average daily steps and the three most
 recent workouts. The step average divides the shared seven-day total by seven;
-the label says today is included because today's count is incomplete. Time is
+the label says **7-day average**. Today's count is incomplete. Time is
 active workout time on iOS and elapsed session time on Android. It is not a
 recovery score or a recommendation.
 
@@ -297,10 +301,11 @@ shows no shared measurement, because HealthKit's read denial cannot be
 distinguished from an empty store. Permission checks continue to govern Android
 reads, so missing step/workout grants do not become fabricated records.
 
-[observed] **Preview examples** replaces the live values with screen-local
-sample records and a visible **Example data** label. It also shows sleep,
-resting heart rate and active energy under **More health possibilities**. The
-copy explicitly says Brooks does not read those yet. These data types exist in
+[observed] The tabs are **Live data** and **Sample data**. Sample data replaces
+the live values with screen-local records and a visible **Sample data** label.
+It also shows sleep, resting heart rate and active energy under **Additional
+metrics**, only in sample mode. These remain sample values; Brooks does not
+read them yet. These data types exist in
 [HealthKit](https://developer.apple.com/documentation/healthkit/data-types)
 and [Health Connect](https://developer.android.com/health-and-fitness/health-connect/data-types),
 but this change adds no native queries or permissions for them. Availability

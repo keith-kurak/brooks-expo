@@ -228,7 +228,7 @@ function SettingsRows() {
   return (
     <>
       <Row label="Your shoes" detail="Miles on the pairs you own" onPress={() => router.navigate('/(tabs)/(shoes)/shoes')} />
-      <Row label="Your health" detail="Activity, steps and more" onPress={() => router.push('/(tabs)/(account)/health-data')} />
+      <Row label="Health data" detail="Workouts and steps" onPress={() => router.push('/(tabs)/(account)/health-data')} />
       <Row label="Shoe Finder" detail="Find your perfect shoe" onPress={() => router.push('/(tabs)/(account)/finder')} />
       <Row label={update.label} detail={update.detail} onPress={update.onPress} />
       <GlassTabsRow />

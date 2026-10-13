@@ -56,7 +56,7 @@ export default function TabStackLayout({ segment }: { segment: string }) {
               row all open it. Its full-bleed navy panel has no room for a
               header, so it draws its own back control. */}
           <Stack.Screen name="finder" options={{ headerShown: false }} />
-          <Stack.Screen name="health-data" options={{ ...header.sheet, headerTransparent: false, headerTitle: 'Your health' }} />
+          <Stack.Screen name="health-data" options={{ ...header.sheet, headerTransparent: false, headerTitle: 'Health data' }} />
         </Stack>
       </View>
     </InTabContext>

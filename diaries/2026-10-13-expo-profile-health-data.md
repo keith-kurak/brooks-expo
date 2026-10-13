@@ -78,3 +78,15 @@ connections. T3 browser scrolling could pick the visible scroll container.
 [observed] Sleep, resting heart rate and active energy remain examples only.
 They need native reads and explicit permissions before live values can be
 shown. No real-device health store was used in this task.
+
+## Demo copy revision
+
+[confirmed — user] The screen is for demonstrating data. Customer wording
+such as "Your movement, at a glance" and explanatory paragraphs are unwanted.
+[observed] The Profile row and native title now say Health data. Tabs say
+Live data and Sample data. Promotional empty headings, the privacy footer and
+explanatory paragraphs were removed. Short status labels and the sample label
+remain. The browser sample view contains metric labels and values, with no
+runtime errors. This revision changes copy only, not reads or calculations.
+[observed] Android verification confirmed the renamed Profile row, native
+title, live empty state and sample tab. Type checking and diff checks passed.
