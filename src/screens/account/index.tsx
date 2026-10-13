@@ -126,6 +126,9 @@ function GuestPitch() {
       {/* The navy panel runs under the status bar, so the bar goes light while
           this tab is in front. */}
       {focused && <StatusBar style="light" animated />}
+      {/* @ref LLP 0003#profile-overscroll — extend the navy above the content
+          without adding scroll height, as Home does below its blue footer. */}
+      <View pointerEvents="none" style={styles.overscrollFill} />
       <View style={[styles.hero, { paddingTop: top + spacing.xl }]}>
         <Txt variant="eyebrow" c={colors.lime}>
           Brooks Run Club
@@ -278,10 +281,19 @@ function GlassTabsRow() {
 
 /** The button's hard shadow hangs 4pt below its face; the note clears it. */
 const SHADOW_GAP = 4;
+const OVERSCROLL_FILL = 1000;
 
 const styles = StyleSheet.create({
   /** The navy panel draws its own top inset, so the screen adds none. */
   guestScreen: { flexGrow: 1, paddingTop: 0 },
+  overscrollFill: {
+    position: 'absolute',
+    top: -OVERSCROLL_FILL,
+    right: 0,
+    left: 0,
+    height: OVERSCROLL_FILL,
+    backgroundColor: colors.navy,
+  },
   hero: {
     backgroundColor: colors.navy,
     paddingHorizontal: spacing.gutter,
