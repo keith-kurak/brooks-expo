@@ -17,7 +17,6 @@ import {
   type ActivityProfile,
   formatMiles,
   formatSteps,
-  isActivityAvailable,
   readActivityProfile,
 } from '@/data/activity';
 import { catalog } from '@/data/catalog';
@@ -27,6 +26,7 @@ import type { Product } from '@/data/types';
 import { useShoes } from '@/store/shoes';
 import { border, colors, spacing } from '@/theme';
 import { useTabBarOverlap } from '@/utils/native-tabs';
+import { HEALTH_NAME, IS_HEALTH_CONNECT, healthErrorMessage, openHealthSettings, useHealthAccess } from '@/utils/health';
 
 import { modelOf, productOf } from '../shoes/replacement';
 import { answersFromActivity, type Evidence } from './from-activity';
@@ -54,7 +54,7 @@ const SIZE_W = Math.floor((W - spacing.gutter * 2 - spacing.sm * 3) / 4);
 /**
  * The Shoe Finder.
  *
- * @ref LLP 0005#health-first — Where Apple Health exists, the Finder starts
+ * @ref LLP 0005#health-first — Where health data is available, the Finder starts
  * from it, and the quiz only asks what the data cannot answer. Without Health,
  * the quiz is the whole Finder.
  *
@@ -213,7 +213,7 @@ function recommend(
     // High mileage rewards durable daily trainers.
     if (chosen(a, 'rundistance') === 'rundistance3' && p.bestFor.some((b) => /everyday|daily|long/i.test(b))) {
       score += 1;
-      if (activity) reasons.push(`Built to take your ${formatMiles(activity.weeklyRunMiles)} miles a week`);
+      if (activity?.distanceComplete) reasons.push(`Built to take your ${formatMiles(activity.weeklyRunMiles)} miles a week`);
     }
 
     // A worn-out pair is a vote for its own line: the runner kept it long enough
@@ -250,7 +250,6 @@ function scienceNotes(a: Answers): string[] {
 type Phase = 'intro' | 'activity' | 'quiz' | 'results';
 
 /** Read once: availability does not change while the app runs. */
-const ACTIVITY_AVAILABLE = isActivityAvailable();
 
 const WEEKS = Math.round(ACTIVITY_WINDOW_DAYS / 7);
 
@@ -258,6 +257,8 @@ const HEALTH_ICON = require('../../../assets/apple-health-icon.png');
 const BROOKS_ICON = require('../../../assets/icon.png');
 
 export function Finder({ replacing: replacingId }: { replacing?: string } = {}) {
+  const { access, reload: reloadAccess } = useHealthAccess();
+  const [readError, setReadError] = useState<string | null>(null);
   // The Finder never carried the blue header, and still does not: its intro is a
   // full-bleed navy panel. It takes its safe area from the same primitive every
   // other headerless screen does.
@@ -290,7 +291,7 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
   const [answers, setAnswers] = useState<Answers>({});
   const [stepIndex, setStepIndex] = useState(0);
 
-  // Apple Health. `profile` is what was read; `prefill` and `evidence` are the
+  // Device activity. `profile` is what was read; `prefill` and `evidence` are the
   // answers it supports and why. All three are screen state only.
   // @ref LLP 0005#nothing-leaves-the-device
   const [reading, setReading] = useState(false);
@@ -332,12 +333,19 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
   const startFromActivity = async () => {
     if (reading) return;
     setReading(true);
+    setReadError(null);
+    if (access.status === 'install-required') {
+      try { await openHealthSettings(); } catch { setReadError('Health Connect could not be opened. Install or update it in Google Play.'); }
+      setReading(false);
+      return;
+    }
     let read: ActivityProfile | null = null;
     try {
       read = await readActivityProfile();
-    } catch {
-      // A failed read is the same as no data: the quiz still works.
+    } catch (error) {
+      setReadError(healthErrorMessage(error));
     }
+    await reloadAccess();
     const derived = read ? answersFromActivity(read) : { answers: {}, evidence: {} };
     setProfile(read);
     setPrefill(derived.answers);
@@ -363,13 +371,17 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
   /* ---------------------------------------------------------------- intro -- */
   // @ref LLP 0005#health-first — With Health on the device, the Finder leads
   // with it and the quiz is the fallback.
-  if (phase === 'intro' && ACTIVITY_AVAILABLE) {
+  if (phase === 'intro' && access.status !== 'unavailable') {
     return (
       <Screen style={[styles.intro, { paddingBottom: spacing.xl }]}>
         <TopBar onDark canLeave={canLeave} replacing={ownedShoe} />
         <View style={{ flex: 2 }} />
         <View style={styles.linkArt}>
-          <Image source={HEALTH_ICON} style={styles.appIcon} accessibilityLabel="Apple Health" />
+          {IS_HEALTH_CONNECT ? (
+            <View style={[styles.appIcon, { backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }]} accessible accessibilityLabel="Health Connect">
+              <LinkGlyph size={44} color={colors.navy} />
+            </View>
+          ) : <Image source={HEALTH_ICON} style={styles.appIcon} accessibilityLabel="Apple Health" />}
           <Image source={BROOKS_ICON} style={styles.appIcon} accessibilityLabel="Brooks" />
           <View style={styles.linkBadge}>
             <LinkGlyph />
@@ -379,22 +391,22 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
         <Txt variant="hero" c={colors.surface} style={{ marginTop: spacing.xxl }}>
           Link to{'\n'}
           <Txt variant="hero" c={colors.lime}>
-            Apple Health
+            {HEALTH_NAME}
           </Txt>
         </Txt>
         <Txt variant="body" c="rgba(255,255,255,0.8)" style={{ marginTop: spacing.md }}>
-          We read your last {WEEKS} weeks of runs, walks and steps, then ask only what Health
-          can't tell us.
+          {IS_HEALTH_CONNECT ? 'We read your recent runs, walks and steps, then ask only what your activity cannot tell us.' : `We read your last ${WEEKS} weeks of runs, walks and steps, then ask only what Health can't tell us.`}
         </Txt>
         <View style={styles.introRule} />
 
         <View style={{ flex: 3 }} />
         <LockGlyph />
         <Txt variant="bodySmall" c="rgba(255,255,255,0.8)" style={styles.privacy}>
-          Your Health data stays on this iPhone. Brooks never stores it or sends it anywhere.
+          Your Finder profile stays on this phone and is discarded when you leave. Nothing is sent to a server.
         </Txt>
+        {readError ? <Txt variant="bodySmall" c={colors.surface}>{readError}</Txt> : null}
         <Button
-          title="Connect Apple Health"
+          title={access.status === 'install-required' ? 'Install Health Connect' : `Connect ${HEALTH_NAME}`}
           variant="onDark"
           loading={reading}
           onPress={startFromActivity}
@@ -434,6 +446,7 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
 
   /* ------------------------------------------------------------- activity -- */
   if (phase === 'activity') {
+    const readWeeks = Math.round((profile?.days ?? ACTIVITY_WINDOW_DAYS) / 7);
     const filled = (Object.keys(prefill) as QuestionCode[]).sort(
       (x, y) => PAGE_ORDER.indexOf(x) - PAGE_ORDER.indexOf(y)
     );
@@ -459,12 +472,19 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
                 : 'Nothing to go on yet.'}
           </Txt>
           <Txt variant="body" c="rgba(255,255,255,0.8)" style={{ marginTop: spacing.sm }}>
-            {found
-              ? `From your last ${WEEKS} weeks in Apple Health. The quiz asks the rest.`
+            {readError ?? (found
+              ? `From your last ${readWeeks} weeks in ${HEALTH_NAME}. The quiz asks the rest.`
               : thin
-                ? `We need about four runs or walks in ${WEEKS} weeks to answer for you. The quiz asks everything.`
-                : `We found no runs, walks or steps from the last ${WEEKS} weeks. You can check what Brooks can read in the Health app.`}
+                ? 'Your activity cannot answer enough yet. The quiz asks the remaining questions.'
+                : IS_HEALTH_CONNECT && !access.workouts && !access.steps
+                  ? 'Choose which activity Brooks can read in Health Connect, or answer the questions yourself.'
+                  : `We found no usable activity from the last ${readWeeks} weeks. Check what Brooks can read in ${HEALTH_NAME} and that your recording app shares activity.`)}
           </Txt>
+          {IS_HEALTH_CONNECT ? (
+            <Press onPress={openHealthSettings} accessibilityRole="button" style={styles.healthLink}>
+              <Txt variant="bodySmall" c={colors.surface} style={styles.healthLinkText}>Manage Health Connect access</Txt>
+            </Press>
+          ) : null}
 
           {found ? (
             <View style={{ marginTop: spacing.xl }}>
@@ -530,7 +550,7 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
               : replacing
                 ? `To replace your ${replacing.name}, we suggest:`
                 : activity
-                  ? 'From your Apple Health activity and your answers, we suggest:'
+                  ? `From your ${HEALTH_NAME} activity and your answers, we suggest:`
                   : QUIZ_UI.resultsLead}
           </Txt>
           {scienceNotes(answers).length ? (
@@ -887,9 +907,9 @@ function Progress({ flow, index }: { flow: string[]; index: number }) {
 }
 
 /** The chain link between the two app icons. */
-function LinkGlyph() {
+function LinkGlyph({ size = 20, color = colors.surface }: { size?: number; color?: string } = {}) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.surface} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
       <Path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <Path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </Svg>

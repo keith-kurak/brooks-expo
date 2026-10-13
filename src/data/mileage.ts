@@ -1,5 +1,5 @@
 /**
- * Shoe mileage: how far each pair has gone, read from Apple Health.
+ * Shoe mileage: how far each pair has gone, read from the device health provider.
  *
  * @ref LLP 0006#mileage-is-workout-distance — A pair's miles are the distance
  * of the Health workouts it covers (runs by default) since its start date, plus
@@ -11,6 +11,7 @@
  */
 import BrooksActivity from '../../modules/brooks-activity/src/BrooksActivityModule';
 import type { ActivityWorkout, WorkoutKind } from '../../modules/brooks-activity/src/BrooksActivity.types';
+import { getActivityAccess } from '../utils/health';
 
 const METERS_PER_MILE = 1609.344;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -118,9 +119,17 @@ export function startOfDay(at: number): number {
   return d.getTime();
 }
 
-/** False on Android, web, and devices without Health. */
+/** False in Expo Go, on web, and where the health provider is unavailable. */
 export function isMileageAvailable(): boolean {
   return BrooksActivity?.isAvailable() ?? false;
+}
+
+/** Whole readable window required for recomputation, including the pace window. */
+export function mileageReadDays(shoes: OwnedShoe[], now = Date.now()): number {
+  if (shoes.length === 0) return PACE_DAYS;
+  const earliest = Math.min(...shoes.map(s => s.startedAt));
+  // Rounded for local days across daylight-saving changes.
+  return Math.max(PACE_DAYS, Math.min(MAX_DAYS, Math.round((startOfDay(now) - earliest) / DAY_MS) + 1));
 }
 
 /**
@@ -136,18 +145,24 @@ export function isMileageAvailable(): boolean {
  */
 export async function readShoeMiles(
   shoes: OwnedShoe[],
-  { ask }: { ask: boolean }
+  { ask, background = false }: { ask: boolean; background?: boolean }
 ): Promise<Record<string, ShoeHealthMiles> | null> {
   if (!BrooksActivity || !BrooksActivity.isAvailable() || shoes.length === 0) return null;
   if (ask) await BrooksActivity.requestAccessAsync();
-  else if (await BrooksActivity.shouldRequestAccessAsync()) return null;
+  const access = await getActivityAccess();
+  if (!access.workouts || !access.distance || (background && !access.background)) return null;
 
   const now = Date.now();
-  const earliest = Math.min(...shoes.map((s) => s.startedAt));
-  // `getWorkoutsAsync(days)` starts at local midnight `days - 1` days ago.
-  // Rounded, not floored: a daylight-saving change makes a day 23 or 25 hours.
-  const days = Math.min(MAX_DAYS, Math.round((startOfDay(now) - earliest) / DAY_MS) + 1);
-  const workouts = await BrooksActivity.getWorkoutsAsync(Math.max(days, PACE_DAYS));
+  const days = mileageReadDays(shoes, now);
+  // Never replace a complete cache with a limited-history reread. @ref LLP 0005#android
+  if (access.maxReadDays != null && days > access.maxReadDays) {
+    throw new Error('Allow earlier history in Health Connect to count from this start date. Your saved miles are unchanged.');
+  }
+  const workouts = await BrooksActivity.getWorkoutsAsync(days);
+  if (workouts.some(w => w.distanceMeters == null && shoes.some(s =>
+    s.kinds.includes(w.kind) && w.start >= s.startedAt && w.start < (s.retiredAt ?? Infinity)))) {
+    throw new Error('Some recorded workouts have no distance. Your saved miles are unchanged. Check distance sharing in your recording app.');
+  }
   return Object.fromEntries(shoes.map((s) => [s.id, sumFor(s, workouts, now)]));
 }
 

@@ -14,16 +14,17 @@ import * as Linking from 'expo-linking';
 import { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
-import BrooksActivity from '../../modules/brooks-activity/src/BrooksActivityModule';
 import { isAppClip } from '../utils/app-clip';
 import {
   formatMileage,
   mileageOf,
+  mileageReadDays,
   readShoeMiles,
   type OwnedShoe,
   type ShoeHealthMiles,
 } from '../data/mileage';
 import { storage } from '../utils/kv-storage';
+import { getActivityAccess, healthErrorMessage } from '../utils/health';
 import { catalog } from '../data/catalog';
 import { brooksImage, heroImage } from '../data/images';
 import { byId, colorwayOf } from '../data/query';
@@ -34,7 +35,7 @@ const MILES_KEY = 'brooks.shoes.miles.v1';
 const HEALTH_SYNC_TASK = 'brooks.shoe-mileage';
 
 // The Clip and older development binaries can omit these native modules.
-const background = !isAppClip && BrooksActivity?.isAvailable() &&
+const background = !isAppClip &&
   requireOptionalNativeModule('ExpoBackgroundTask') && requireOptionalNativeModule('ExpoTaskManager')
   ? {
       tasks: require('expo-task-manager') as typeof import('expo-task-manager'),
@@ -50,9 +51,11 @@ interface StoredMiles {
 
 export interface ShoesState extends StoredMiles {
   shoes: OwnedShoe[];
+  syncError: string | null;
 }
 
 let state: ShoesState = {
+  syncError: null,
   shoes: storage.get<OwnedShoe[]>(SHOES_KEY, []),
   ...storage.get<StoredMiles>(MILES_KEY, { byShoe: {}, readAt: null }),
 };
@@ -132,9 +135,12 @@ let registering: Promise<void> = Promise.resolve();
 export function reconcileBackgroundSync(): Promise<void> {
   registering = registering.then(async () => {
     if (!background || !(await background.tasks.isAvailableAsync())) return;
-    const registered = await background.tasks.isTaskRegisteredAsync(HEALTH_SYNC_TASK);
-    const shouldRun = activeShoes(state).length > 0 &&
-      !(await BrooksActivity!.shouldRequestAccessAsync());
+    const [registered, access] = await Promise.all([
+      background.tasks.isTaskRegisteredAsync(HEALTH_SYNC_TASK), getActivityAccess(),
+    ]);
+    const shouldRun = activeShoes(state).length > 0 && access.status === 'available' &&
+      access.workouts && access.distance && access.background &&
+      (access.maxReadDays == null || mileageReadDays(state.shoes) <= access.maxReadDays);
     if (!shouldRun) {
       if (registered) await background.scheduler.unregisterTaskAsync(HEALTH_SYNC_TASK);
     } else if (!registered && await background.scheduler.getStatusAsync() === background.scheduler.BackgroundTaskStatus.Available) {
@@ -152,7 +158,7 @@ export function reconcileBackgroundSync(): Promise<void> {
  * `ask` is only passed by a user tap; the background task never prompts.
  * @ref LLP 0006#background-health-sync
  */
-export function refreshMileage({ ask = false }: { ask?: boolean } = {}): Promise<boolean> {
+export function refreshMileage({ ask = false, background = false }: { ask?: boolean; background?: boolean } = {}): Promise<boolean> {
   if (isAppClip) return Promise.resolve(true);
   reading = reading.then(async () => {
     try {
@@ -162,12 +168,14 @@ export function refreshMileage({ ask = false }: { ask?: boolean } = {}): Promise
       let read: Record<string, ShoeHealthMiles> | null;
       do {
         shoes = state.shoes;
-        read = await readShoeMiles(shoes, { ask });
+        read = await readShoeMiles(shoes, { ask, background });
         ask = false;
       } while (shoes !== state.shoes);
-      if (read) commit({ ...state, byShoe: read, readAt: Date.now() });
+      if (read) commit({ ...state, byShoe: read, readAt: Date.now(), syncError: null });
       return true;
-    } catch {
+    } catch (error) {
+      state = { ...state, syncError: healthErrorMessage(error) };
+      for (const listener of listeners) listener();
       return false;
     } finally {
       void reconcileBackgroundSync();
@@ -255,5 +263,5 @@ background?.tasks.defineTask(HEALTH_SYNC_TASK, async ({ error }) => {
   const { BackgroundTaskResult } = background.scheduler;
   if (error) return BackgroundTaskResult.Failed;
   if (!activeShoes(state).length) return BackgroundTaskResult.Success;
-  return await refreshMileage() ? BackgroundTaskResult.Success : BackgroundTaskResult.Failed;
+  return await refreshMileage({ background: true }) ? BackgroundTaskResult.Success : BackgroundTaskResult.Failed;
 });
