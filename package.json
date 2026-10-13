@@ -49,6 +49,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test:health-sync": "bun test tools/tests/health-sync/health-sync.test.ts",
+    "test:filters": "bun test tools/tests/filters",
     "harvest": "cd tools/harvest && node harvest.js && node harvest-reviews.js && node validate-editorial.js",
     "harvest:reviews": "node tools/harvest/harvest-reviews.js",
     "sync": "node tools/harvest/sync.js"

@@ -26,7 +26,7 @@ import { VOICE } from '@/data/editorial';
 import { heroImage } from '@/data/images';
 import { countSearchFilters } from '@/data/search-query';
 import { consumeSearchFocus } from '@/store/search-focus';
-import { useSearchFilterState } from '@/store/search-filters';
+import { activateSearchFilters, getSearchFilterState, SEARCH_FILTER_SCOPE, useSearchFilterState } from '@/store/search-filters';
 import { border, colors, motion, spacing, type } from '@/theme';
 import { useTabBarOverlap } from '@/utils/native-tabs';
 
@@ -95,7 +95,7 @@ export function Shop() {
   const paddingTop = useScreenTopPadding();
   const tabBarOverlap = useTabBarOverlap();
   const reduceMotion = useReducedMotion();
-  const { filters } = useSearchFilterState();
+  const { filters } = useSearchFilterState(SEARCH_FILTER_SCOPE);
   const nFilters = countSearchFilters(filters);
 
   const barRef = useRef<SearchBarHandle>(null);
@@ -354,7 +354,11 @@ export function Shop() {
           />
         </Animated.View>
         <Animated.View style={[styles.filter, filterStyle]}>
-          <FilterButton count={nFilters} onPress={() => router.push('/search-filters')} />
+          <FilterButton count={nFilters} onPress={() => {
+            const search = getSearchFilterState(SEARCH_FILTER_SCOPE);
+            activateSearchFilters(SEARCH_FILTER_SCOPE, search.candidates, search.unmatchedCount);
+            router.push('/search-filters');
+          }} />
         </Animated.View>
       </Animated.View>
     </View>

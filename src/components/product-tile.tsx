@@ -39,7 +39,8 @@ function ProductTileImpl({
   width: number;
   index?: number;
 }) {
-  const [ci, setCi] = useState(0);
+  const [selectedCode, setSelectedCode] = useState<string>();
+  const ci = Math.max(0, product.colors.findIndex((c) => c.code === selectedCode));
   const colorway = product.colors[ci] ?? product.colors[0];
   const { min, max } = priceRange(product);
 
@@ -108,8 +109,9 @@ function ProductTileImpl({
                 scaleTo={0.85}
                 hitSlop={slop}
                 accessibilityRole="button"
+                accessibilityLabel={c.name}
                 accessibilityState={{ selected: i === ci }}
-                onPress={() => setCi(i)}
+                onPress={() => setSelectedCode(c.code)}
                 style={[styles.swatch, { width: slot, height: slot }]}
               >
                 <ShoeImage
