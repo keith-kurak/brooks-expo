@@ -47,6 +47,7 @@ export function Button({
   loading,
   style,
   accessory,
+  testID,
 }: {
   title: string;
   onPress?: () => void;
@@ -56,6 +57,7 @@ export function Button({
   style?: ViewProps['style'];
   /** Right-aligned text inside the button, e.g. a price. */
   accessory?: string;
+  testID?: string;
 }) {
   const isPurchase = variant === 'purchase';
   const isFilled = variant === 'primary' || isPurchase;
@@ -105,6 +107,7 @@ export function Button({
       {shadowed ? <View style={[styles.buttonShadow, { borderColor: shadowColor }]} /> : null}
       <Animated.View style={face}>
       <Pressable
+        testID={testID}
         accessibilityRole="button"
         accessibilityState={{ disabled: !!inert, busy: !!loading }}
         disabled={inert}

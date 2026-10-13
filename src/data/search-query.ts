@@ -10,7 +10,7 @@
  *
  * Pure: no React or platform import, like `query.ts`.
  */
-import type { Product } from './types';
+import type { Colorway, Product } from './types';
 
 export type SearchSort =
   | 'recommended'
@@ -71,30 +71,44 @@ export const COLOUR_FAMILIES: { key: string; label: string; swatch: string; word
 /** A colourway with three or more families is what the site files under Multi. */
 const MULTI_AT = 3;
 
+export function colourFamiliesOfColorway(c: Colorway): Set<string> {
+  const families = COLOUR_FAMILIES.filter((f) => f.key !== 'multi' && f.words.test(c.name));
+  const out = new Set(families.map((f) => f.key));
+  if (families.length >= MULTI_AT) out.add('multi');
+  return out;
+}
+
 export function colourFamiliesOf(p: Product): Set<string> {
   const out = new Set<string>();
   for (const c of p.colors) {
-    const families = COLOUR_FAMILIES.filter((f) => f.key !== 'multi' && f.words.test(c.name));
-    for (const f of families) out.add(f.key);
-    if (families.length >= MULTI_AT) out.add('multi');
+    for (const family of colourFamiliesOfColorway(c)) out.add(family);
   }
   return out;
 }
 
 export function applySearchFilters(products: Product[], f: SearchFilters): Product[] {
-  return products.filter((p) => {
-    if (f.gender.length && !(p.gender && f.gender.includes(p.gender))) return false;
-    if (f.minRating) {
-      const r = p.rating ?? 0;
-      if (f.minRating >= 5 ? r < 4.75 : r < f.minRating) return false;
-    }
-    if (f.features.length && !f.features.every((x) => p.features.includes(x))) return false;
+  const out: Product[] = [];
+  for (const p of products) {
+    if (f.gender.length && !(p.gender && f.gender.includes(p.gender))) continue;
+    if (f.minRating && (p.rating == null || p.rating < f.minRating)) continue;
+    if (f.features.length && !f.features.every((x) => p.features.includes(x))) continue;
     if (f.colours.length) {
-      const fam = colourFamiliesOf(p);
-      if (!f.colours.some((c) => fam.has(c))) return false;
+      // @ref LLP 0003#filter-correctness — Matching styles must also show matching colorways.
+      const colors = p.colors.filter((c) => {
+        const families = colourFamiliesOfColorway(c);
+        return f.colours.some((key) => families.has(key));
+      });
+      if (!colors.length) continue;
+      const cheapest = colors.reduce((a, b) => (b.price ?? Infinity) < (a.price ?? Infinity) ? b : a);
+      out.push({
+        ...p, colors, price: cheapest.price, listPrice: cheapest.listPrice,
+        onSale: colors.some((c) => c.price != null && c.listPrice != null && c.price < c.listPrice),
+      });
+    } else {
+      out.push(p);
     }
-    return true;
-  });
+  }
+  return out;
 }
 
 /** `recommended` keeps the order the live index returned. */
@@ -102,9 +116,9 @@ export function sortSearchResults(products: Product[], key: SearchSort): Product
   const out = [...products];
   switch (key) {
     case 'price-asc':
-      return out.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+      return out.sort((a, b) => comparePrice(a.price, b.price, 1));
     case 'price-desc':
-      return out.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+      return out.sort((a, b) => comparePrice(a.price, b.price, -1));
     case 'top-rated':
       return out.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     case 'best-sellers':
@@ -122,6 +136,12 @@ export function sortSearchResults(products: Product[], key: SearchSort): Product
     default:
       return out;
   }
+}
+
+function comparePrice(a: number | null, b: number | null, direction: number): number {
+  if (a == null) return b == null ? 0 : 1;
+  if (b == null) return -1;
+  return (a - b) * direction;
 }
 
 /** The features actually present in a result set, most common first. */

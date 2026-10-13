@@ -63,7 +63,7 @@ const SIZE_W = Math.floor((W - spacing.gutter * 2 - spacing.sm * 3) / 4);
  * (`./quiz.ts`). The "Take 'em off" checkpoint plays as a full-screen beat, and
  * results name *why* — which is what turns a quiz into advice.
  *
- * @ref LLP 0006#replacing-a-pair — Opened from a worn pair on the Shoes tab,
+ * @ref LLP 0006#replacing-a-pair — Opened from a worn pair on Your shoes,
  * the Finder knows what the runner wears now: it says so at the top, and the
  * results favor the same line and feel.
  */
@@ -276,7 +276,7 @@ export function Finder({ replacing: replacingId }: { replacing?: string } = {}) 
   const navigation = useNavigation();
   const canLeave = navigation.canGoBack();
 
-  // The owned pair this Finder run is replacing, when the Shoes tab sent it.
+  // The owned pair this Finder run is replacing, when Your shoes sent it.
   const shoes = useShoes();
   const ownedShoe = shoes.shoes.find((s) => s.id === replacingId) ?? null;
   const replacing = useMemo<Replacing | null>(() => {

@@ -18,7 +18,7 @@ const TARGET = {
   name: 'app',
   data: path.join(ROOT, 'assets'),
   lib: path.join(ROOT, 'src', 'data'),
-  libFiles: ['types.ts', 'query.ts', 'images.ts', 'constructor.ts'],
+  libFiles: ['types.ts', 'query.ts', 'images.ts', 'constructor.ts', 'search-query.ts', 'search-results.ts'],
 };
 
 const catalog = path.join(SRC, 'catalog.json');
