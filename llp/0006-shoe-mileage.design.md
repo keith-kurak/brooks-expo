@@ -1,4 +1,4 @@
-# LLP 0006: Shoe Mileage and the Shoes Tab
+# LLP 0006: Shoe Mileage and Your Shoes
 
 **Type:** Design
 **Status:** Draft
@@ -16,10 +16,15 @@ Health workouts since the start date. It shows the result as "70% done,
 time to replace." A home screen and Lock Screen widget shows the same number.
 The app sends the number to the widget through an App Group.
 
-The Shoe Finder was a tab of its own. That tab is now **Shoes**: the pairs
-the runner owns, their miles, and the Finder as the way to the next pair.
+[confirmed — user, 2026-10-13] **Your shoes** opens from Profile instead of
+having its own tab. It shows the pairs the runner owns, their miles, and the
+Finder as the way to the next pair.
 
 ## The Shoes tab
+
+[Superseded 2026-10-13 — navigation only] The dedicated Shoes tab described
+below has been removed. The screen content and mileage behavior remain; see
+[Shoes opens from Profile](#shoes-opens-from-profile).
 
 [confirmed — user, 2026-10-06] The user asked for the Finder to be "a core
 part of the app". [inferred] A quiz is something a shopper takes about once
@@ -57,6 +62,27 @@ bar, so the Finder draws its own back caret when it was pushed.
 Home shows one ink strip under the hero, only while a pair is at 70% or more:
 "Your Ghost 16. 72% done, time to replace." It opens the Shoes tab. Without a
 worn pair, Home is unchanged.
+
+## Shoes opens from Profile
+
+[confirmed — user, 2026-10-13] Remove the Shoes tab button and reach the
+screen through Profile.
+
+[observed — implementation, 2026-10-13] Both tab bars now have Home, Browse,
+Cart and Profile. The shared array group is
+`src/app/(tabs)/(index,shop,cart,account)/`; it has no Shoes clone or anchor.
+The guest and member Profile screens share a **Your shoes** row, which pushes
+`/(tabs)/(account)/shoes` above the account anchor. The screen wears the
+native transparent header with a back chevron. Its empty navy panel uses a
+white chevron and light status bar; saved pairs use ink and a dark status bar.
+Both layouts pad below `useHeaderHeight()` so content clears the back button.
+
+[observed] The Finder opens at `/(tabs)/(account)/finder`, preserving the
+replacement parameter. Back from the Finder returns to the shoes, and Back
+from the shoes returns to Profile. The Home replacement reminder and newly
+published widget links use the same Profile destination. Explicit group names
+keep these links from choosing Home's clone of the shared screen. Profile's
+anchor provides the back destination for a direct link.
 
 ## The owned-shoes store
 
@@ -200,10 +226,13 @@ iOS only, and it is not in Expo Go.
   function runs in its own runtime and can reference nothing outside its
   body: no theme, no helpers, no Filson Pro. The colors are restated in it as
   hex values.
-- A tap opens `ecomdemo:///(tabs)/(shoes)/shoes`. [observed 2026-10-06] The
+- [observed 2026-10-13] A tap opens `ecomdemo:///(tabs)/(account)/shoes`, on
+  Profile's stack. [Superseded 2026-10-13] It previously opened
+  `ecomdemo:///(tabs)/(shoes)/shoes`. [observed 2026-10-06] The
   first version used `ecomdemo://shoes`. That matched the first clone of the
   array group, `(index)/shoes`, so the tap pushed the Shoes screen onto Home's
-  stack with a back button. Naming the groups opens the Shoes tab itself.
+  stack with a back button. Naming the groups selected the Shoes tab itself;
+  it now selects Profile, as described above.
 - On Android and web, `shoe-mileage.tsx` is an empty function. In Expo Go, the
   iOS file finds no `ExpoWidgets` native module and does nothing.
 

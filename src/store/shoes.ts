@@ -2,7 +2,7 @@
  * The shoes the runner owns, and how far each pair has gone.
  *
  * @ref LLP 0006#the-owned-shoes-store — Pairs live on the device, in the same
- * synchronous storage as the cart and the member, so the Shoes tab and the
+ * synchronous storage as the cart and the member, so Your shoes and the
  * widget know every pair before the first frame. The miles from the last
  * Health read are stored with them: Health is only read after the app has
  * asked once, and a cold launch should not show "0 mi" until it has.
@@ -212,10 +212,10 @@ export function useMileageSync() {
 function publishWidget() {
   if (isAppClip) return;
   const shoe = mostWornShoe(state);
-  // The groups are named on purpose: a bare `/shoes` matches the first clone
-  // of the array group, so it pushed the screen onto Home's stack, with a
-  // back button, instead of opening the Shoes tab.
-  const url = Linking.createURL('/(tabs)/(shoes)/shoes');
+  // Name Profile's group: a bare `/shoes` matches the first array-group clone,
+  // which would put the pairs on Home's stack instead.
+  // @ref LLP 0006#shoes-opens-from-profile
+  const url = Linking.createURL('/(tabs)/(account)/shoes');
   if (!shoe) {
     updateShoeMileageWidget({ hasShoe: false, name: '', share: 0, percent: '', status: '', miles: '', milesShort: '', limit: '', pace: '', replace: false, url, image: '' });
     return;

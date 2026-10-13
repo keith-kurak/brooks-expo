@@ -8,7 +8,7 @@
 **Role:** Root
 **Author:** Charlie Cheever / Codex
 **Date:** 2026-07-13
-**Revised:** 2026-10-08
+**Revised:** 2026-10-13
 **Related:** LLP 0001, LLP 0002, LLP 0003, LLP 0004, LLP 0005, LLP 0006, LLP 0007, [ccheever/llp](https://github.com/ccheever/llp)
 
 ## Summary
@@ -94,8 +94,8 @@ including:
 - the home experience, led by the current Josh Kerr / Project 222 feature;
 - Men's and Women's shopping sections;
 - New Arrivals;
-- the Shoe Finder (since 2026-10-06 pushed from the Shoes tab, which also
-  tracks the miles on the runner's own shoes; see
+- the Shoe Finder (pushed from Browse, Profile, or Your shoes, which since
+  2026-10-13 opens from Profile and tracks the runner's pairs; see
   [LLP 0006](./0006-shoe-mileage.design.md));
 - product browsing and product details needed to buy shoes;
 - login; and

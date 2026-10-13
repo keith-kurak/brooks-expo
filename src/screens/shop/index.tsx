@@ -267,7 +267,8 @@ export function Shop() {
         </ScrollView>
 
         {/* The Shoe Finder is pushed on Browse's own stack, so Back returns
-            here. Its tab is Shoes now. @ref LLP 0006#the-shoes-tab */}
+            here. Your shoes opens from Profile.
+            @ref LLP 0006#shoes-opens-from-profile */}
         <Press
           scaleTo={0.98}
           style={styles.finderCard}

@@ -5,7 +5,7 @@
 **Systems:** Brooks, Expo App, Exact App, Design
 **Author:** Claude Fable 5
 **Date:** 2026-07-13
-**Revised:** 2026-10-12
+**Revised:** 2026-10-13
 **Related:** LLP 0000, LLP 0001, LLP 0002
 
 ## Summary
@@ -414,6 +414,13 @@ Ported verbatim into [`src/components/icons.tsx`](../src/components/icons.tsx)
   because the system badge's text is fixed white on iOS.
 
 ### The tab bar is app-drawn again
+
+[confirmed — user, 2026-10-13] Shoes no longer has a tab button. Both bars
+have four destinations: Home, Browse, Cart and Profile. Profile's Your shoes
+row pushes the mileage screen with a native back button. This supersedes the
+five-tab counts and Shoes trigger described below, while retaining the
+glyph, badge and bar-toggle behavior for the remaining tabs. See
+[LLP 0006](./0006-shoe-mileage.design.md#shoes-opens-from-profile).
 
 [superseded in part 2026-09-24 → *Liquid Glass devices get the system tab
 bar*: this section now describes the bar on devices without Liquid Glass only.]

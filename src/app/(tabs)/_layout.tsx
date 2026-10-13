@@ -10,15 +10,14 @@ import { colors } from '@/theme';
 import { takeLanding, useNativeTabs } from '@/utils/native-tabs';
 
 /**
- * The bottom tab bar. Five tabs: Home, Browse, Shoes, Cart, Profile.
+ * The bottom tab bar. Four tabs: Home, Browse, Cart, Profile.
  *
- * @ref LLP 0006#the-shoes-tab — The third tab was the Shoe Finder. It is now
- * Shoes: the pairs the runner owns, their miles, and the Finder for the next
- * pair. It keeps the Finder's glyph.
+ * @ref LLP 0006#shoes-opens-from-profile — Profile pushes Your shoes on its
+ * own stack, so the owned pairs no longer need a tab of their own.
  *
  * @ref LLP 0003#liquid-glass-is-a-profile-toggle — Every device starts on the
  * app-drawn `BrooksTabBar`. A Liquid Glass device can switch to the system bar
- * (`NativeTabs`) from Profile. Both mount the same five array-group clones, so
+ * (`NativeTabs`) from Profile. Both mount the same four array-group clones, so
  * the routes, stacks, and anchors are identical either way.
  *
  * Each trigger targets one clone of the shared array-group Stack so every tab
@@ -51,7 +50,6 @@ function BrooksTabs() {
     >
       <Tabs.Screen name="(index)" options={{ title: 'Home' }} />
       <Tabs.Screen name="(shop)" options={{ title: 'Browse' }} />
-      <Tabs.Screen name="(shoes)" options={{ title: 'Shoes' }} />
       <Tabs.Screen name="(cart)" options={{ title: 'Cart' }} />
       <Tabs.Screen name="(account)" options={{ title: 'Profile' }} />
     </Tabs>
@@ -68,7 +66,7 @@ const GLASS_TINT =
   Platform.OS === 'ios' ? DynamicColorIOS({ light: colors.ink, dark: colors.surface }) : colors.ink;
 
 /**
- * @ref LLP 0003#the-glass-bar-wears-the-brooks-glyphs — The same five glyphs
+ * @ref LLP 0003#the-glass-bar-wears-the-brooks-glyphs — The same four glyphs
  * as `BrooksTabBar`, as PNGs: `NativeTabs` cannot draw react-native-svg. They
  * come from `tools/tab-icons/render.js`, which copies `TabIcon`'s geometry;
  * rerun it after changing a glyph. Black on transparent, drawn as template
@@ -77,7 +75,6 @@ const GLASS_TINT =
 const ICONS = {
   home: require('../../../assets/tab-icons/home.png'),
   browse: require('../../../assets/tab-icons/browse.png'),
-  finder: require('../../../assets/tab-icons/finder.png'),
   cart: require('../../../assets/tab-icons/cart.png'),
   account: require('../../../assets/tab-icons/account.png'),
 };
@@ -87,9 +84,7 @@ const ICONS = {
  * like the app-drawn bar: each label is `hidden`, which blanks the item title,
  * so the name moves to the trigger's `accessibilityLabel` for VoiceOver.
  *
- * Five regular triggers fit without a "More" tab. The ceiling that pushed Shoe
- * Finder off the bar in August was five plus the detached `role="search"`
- * trigger; Browse is the search screen now, so there is no search trigger.
+ * Browse is the search screen, so it needs no separate search trigger.
  *
  * `disableAutomaticContentInsets` on every trigger: the system would otherwise
  * flip each tab's first scroll view from `never` to `automatic`, and every
@@ -129,15 +124,6 @@ function GlassTabs() {
       >
         <NativeTabs.Trigger.Icon src={ICONS.browse} renderingMode="template" />
         <NativeTabs.Trigger.Label hidden>Browse</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger
-        name="(shoes)"
-        accessibilityLabel="Shoes"
-        disableAutomaticContentInsets
-        disableScrollToTop
-      >
-        <NativeTabs.Trigger.Icon src={ICONS.finder} renderingMode="template" />
-        <NativeTabs.Trigger.Label hidden>Shoes</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="(cart)"

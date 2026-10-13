@@ -123,7 +123,7 @@ export default function RootLayout() {
                 }}
               />
               <Stack.Protected guard={!isAppClip}>
-                {/* Adding a pair the runner owns, from the Shoes tab or a
+                {/* Adding a pair the runner owns, from Your shoes or a
                     PDP. A form sheet like `Filter & sort`, for the same reason:
                     the root stack presents it. @ref LLP 0006#adding-a-pair */}
                 <Stack.Screen
