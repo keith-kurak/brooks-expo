@@ -5,7 +5,7 @@
 **Systems:** Brooks, Expo App, Exact App, Design
 **Author:** Claude Fable 5
 **Date:** 2026-07-13
-**Revised:** 2026-10-06
+**Revised:** 2026-10-12
 **Related:** LLP 0000, LLP 0001, LLP 0002
 
 ## Summary
@@ -1685,6 +1685,18 @@ continuous morph.
   keeps the snap). Selector
   rails (the PDP colour swatches, an `UnderlineRail`) do not snap: they scroll to
   the selected swatch on their own.
+
+### Profile overscroll
+
+[confirmed — user direction, 2026-10-12] Pulling down on the guest Profile
+screen should continue the navy Run Club panel, using the same approach as
+Home's blue bottom overscroll fill.
+
+[observed — implementation, 2026-10-12] An absolute, non-interactive navy view
+extends 1000pt above the guest scroll content. Like Home's footer fill, it sits
+outside the content bounds so it adds no scroll height. The scroll view keeps
+its white background for the rest of the page and bottom bounce. The member
+screen starts on white and keeps its existing background.
 
 ## Wow list
 
