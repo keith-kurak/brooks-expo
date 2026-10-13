@@ -27,7 +27,7 @@ import { select } from '@/utils/haptics';
  * catalog-tile color rail: the duration and easing are imported from
  * `underline-rail.tsx` rather than restated, and it moves on a native CSS transition so selection never
  * touches the JS thread. Item frames are measured once via onLayout instead of
- * assumed to be width/5, so the rule stays correct on rotation and on the wider
+ * assumed to be equal widths, so the rule stays correct on rotation and on the wider
  * Max/iPad frames.
  *
  * Screens do NOT need to pad for this bar. `BottomTabView` puts the screen
@@ -61,7 +61,6 @@ const ICON_TOP = 14;
 const TABS: { route: string; icon: TabIconName; label: string }[] = [
   { route: '(index)', icon: 'home', label: 'Home' },
   { route: '(shop)', icon: 'browse', label: 'Browse' },
-  { route: '(shoes)', icon: 'finder', label: 'Shoes' },
   { route: '(cart)', icon: 'cart', label: 'Cart' },
   { route: '(account)', icon: 'account', label: 'Profile' },
 ];

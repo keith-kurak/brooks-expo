@@ -19,8 +19,9 @@ Results quote the shopper's own numbers in their reasons.
 The Finder is Health-first: where Health is available, Health is the main way
 in and the quiz is the fallback (see [Health first](#health-first)).
 
-[observed 2026-10-06] The Finder is no longer a tab. The Shoes tab
-(LLP 0006#the-shoes-tab) pushes it, and so do Browse and Profile. Opened from
+[observed 2026-10-13] The Finder is no longer a tab. Your shoes, now opened
+from Profile (LLP 0006#shoes-opens-from-profile), pushes it, and so do Browse
+and Profile directly. Opened from
 a worn pair, it also knows the pair it is replacing
 (LLP 0006#replacing-a-pair). The same Health workouts now also count the
 miles on the runner's shoes (LLP 0006#mileage-is-workout-distance).

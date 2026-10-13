@@ -10,12 +10,12 @@ A working mobile shopping prototype inspired by [Brooks Running](https://www.bro
 
 - Home mirrors the current Brooks campaign with the Ghost Amp video hero, product rails, editorial cards, and the "Longer days. Longer runs." feature.
 - Browse covers categories and franchises. Its search field swaps the screen into live Constructor.io results, with suggestions, filters, sorting, and an on-device fallback when the service is unavailable.
-- The Shoes tab tracks the pairs you own. It counts recorded workout distance from Apple Health on iOS or Health Connect on Android, starting at each pair's start date, and says when a pair is "70% done, time to replace." The iOS home screen and Lock Screen widget shows the same mileage.
+- Profile's Your shoes screen tracks the pairs you own. It counts recorded workout distance from Apple Health on iOS or Health Connect on Android, starting at each pair's start date, and says when a pair is "70% done, time to replace." The iOS home screen and Lock Screen widget shows the same mileage.
 - Shoe Finder reads runs, walks and steps from Apple Health or Health Connect, fills the answers your activity supports, and asks the rest. The questions, branches and barefoot-test videos are the ones brooksrunning.com's own Shoe Finder uses. It ranks products from the bundled catalog.
 - Product details include a swipeable gallery, colorways, widths, per-size availability, specifications, fit data, reviews, and a persistent add-to-cart flow.
 - Cart supports quantity changes, swipe-to-remove with undo, totals, and persisted items. Checkout displays the prototype boundary instead of contacting Brooks.
 - Brooks Run Club membership is a local demo state. Names and email addresses stay on the device.
-- The app uses native stack headers and sheets, an app-owned five-tab bar, reduced-motion behavior, and Apple zoom transitions on iOS 18 and newer.
+- The app uses native stack headers and sheets, an app-owned four-tab bar (Home, Browse, Cart, Profile), reduced-motion behavior, and Apple zoom transitions on iOS 18 and newer.
 
 The repository has iOS, Android, and web scripts. The store-delivery workflow ships iOS to TestFlight and Android to the Google Play internal testing track.
 
@@ -196,7 +196,7 @@ This repository uses [Linked Literate Programming](https://github.com/ccheever/l
 - [LLP 0003: Brooks design system and screen patterns](./llp/0003-brooks-design-system.research.md) records brand tokens, navigation, motion, and current screen decisions.
 - [LLP 0004: Building on Exact today](./llp/0004-building-on-exact.research.md) preserves research from the original monorepo.
 - [LLP 0005: Activity-informed Shoe Finder](./llp/0005-activity-informed-finder.design.md) explains the Apple Health and Health Connect readers and permission handling.
-- [LLP 0006: Shoe mileage and the Shoes tab](./llp/0006-shoe-mileage.design.md) explains the owned-shoes store, how mileage is counted, and how the widget gets its number.
+- [LLP 0006: Shoe mileage and Your shoes](./llp/0006-shoe-mileage.design.md) explains the owned-shoes store, how mileage is counted, and how the widget gets its number.
 - [AGENTS.md](./AGENTS.md) contains working rules for AI agents, including LLP and diary requirements.
 
 Code uses `@ref LLP NNNN#section` comments where a non-obvious implementation decision needs its rationale close by.

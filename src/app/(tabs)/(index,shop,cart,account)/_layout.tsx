@@ -1,18 +1,17 @@
 import { Stack } from 'expo-router/stack';
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '@/theme';
+import { colors, header } from '@/theme';
 import { InTabContext } from '@/utils/native-tabs';
 
 export const unstable_settings = {
   index: { anchor: 'index' },
   shop: { anchor: 'shop' },
-  shoes: { anchor: 'shoes' },
   cart: { anchor: 'cart' },
   account: { anchor: 'account' },
 };
 
-const tabNames = new Set(['index', 'shop', 'shoes', 'cart', 'account']);
+const tabNames = new Set(['index', 'shop', 'cart', 'account']);
 
 /**
  * Shared native stack chrome for every tab.
@@ -52,7 +51,13 @@ export default function TabStackLayout({ segment }: { segment: string }) {
           }}
         >
           <Stack.Screen name={screenName} options={{ headerShown: false }} />
-          {/* Pushed in any tab: the Shoes tab, the Browse card and the Profile
+          {/* @ref LLP 0006#shoes-opens-from-profile — a pushed screen with
+              the native back chevron, above Profile's account anchor. */}
+          <Stack.Screen
+            name="shoes"
+            options={{ title: 'Your shoes', ...header.overlay, animation: 'default' }}
+          />
+          {/* Pushed in any tab: Your shoes, the Browse card and the Profile
               row all open it. Its full-bleed navy panel has no room for a
               header, so it draws its own back control. */}
           <Stack.Screen name="finder" options={{ headerShown: false }} />

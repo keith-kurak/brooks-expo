@@ -1,4 +1,5 @@
-import { router, useIsFocused } from 'expo-router';
+import { router, Stack, useIsFocused } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Alert, RefreshControl, StyleSheet, View } from 'react-native';
@@ -6,7 +7,7 @@ import { Alert, RefreshControl, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { BrooksIcon } from '@/components/icons';
 import { Press } from '@/components/press';
-import { ScreenHeading, ScreenScrollView, useScreenTopPadding } from '@/components/screen';
+import { ScreenHeading, ScreenScrollView } from '@/components/screen';
 import { ShoeImage } from '@/components/shoe-image';
 import { TabIcon } from '@/components/tab-icon';
 import { Txt } from '@/components/themed-text';
@@ -18,22 +19,21 @@ import {
   type OwnedShoe,
 } from '@/data/mileage';
 import { refreshMileage, removeShoe, retireShoe, useShoes } from '@/store/shoes';
-import { border, colors, spacing } from '@/theme';
+import { border, colors, header, spacing } from '@/theme';
 import { useTabBarOverlap } from '@/utils/native-tabs';
 import { HEALTH_NAME, IS_HEALTH_CONNECT, openHealthSettings, useHealthAccess } from '@/utils/health';
 
 import { imageOf, successorOf } from './replacement';
 
-const FINDER = '/(tabs)/(shoes)/finder' as const;
+const FINDER = '/(tabs)/(account)/finder' as const;
 
 /**
- * The Shoes tab: the pairs the runner owns, how far each has gone, and the
+ * Your shoes: the pairs the runner owns, how far each has gone, and the
  * way to the next pair.
  *
- * @ref LLP 0006#the-shoes-tab — This tab used to be the Shoe Finder alone. A
- * quiz is something a shopper takes once a year; a pair's miles change every
- * run. So the tab leads with the pairs, and the Finder is where a worn pair
- * sends the runner, already knowing what they run in.
+ * @ref LLP 0006#shoes-opens-from-profile — Profile pushes this screen with
+ * a native back chevron. Its Finder pushes stay on the same stack, so Back
+ * returns to the pair before returning to Profile.
  */
 export function Shoes() {
   const state = useShoes();
@@ -42,6 +42,8 @@ export function Shoes() {
   const active = state.shoes.filter((s) => s.retiredAt == null);
   const retired = state.shoes.filter((s) => s.retiredAt != null);
   const [refreshing, setRefreshing] = useState(false);
+  const headerHeight = useHeaderHeight();
+  const focused = useIsFocused();
 
   if (state.shoes.length === 0) return <Empty />;
 
@@ -53,8 +55,11 @@ export function Shoes() {
 
   return (
     <ScreenScrollView
+      contentContainerStyle={{ paddingTop: headerHeight + spacing.xl }}
       refreshControl={HEALTH ? <RefreshControl refreshing={refreshing} onRefresh={pull} /> : undefined}
     >
+      <Stack.Screen options={{ headerTintColor: header.tint }} />
+      {focused && <StatusBar style="dark" animated />}
       <ScreenHeading>Your shoes.</ScreenHeading>
       <HealthNote readAt={state.readAt} error={state.syncError} />
 
@@ -281,11 +286,11 @@ function RetiredRow({ shoe, miles }: { shoe: OwnedShoe; miles: Parameters<typeof
   );
 }
 
-/** No pairs yet: what the tab does, and its two ways in. */
+/** No pairs yet: what the screen does, and its two ways in. */
 function Empty() {
   const { access } = useHealthAccess();
   const HEALTH = access.status !== 'unavailable';
-  const top = useScreenTopPadding();
+  const headerHeight = useHeaderHeight();
   const overlap = useTabBarOverlap();
   const focused = useIsFocused();
   return (
@@ -294,9 +299,10 @@ function Empty() {
       contentInset={{ bottom: 0 }}
       contentContainerStyle={[styles.emptyScreen, { paddingBottom: spacing.xl + overlap }]}
     >
-      {/* The navy panel runs under the status bar. */}
+      <Stack.Screen options={{ headerTintColor: colors.surface }} />
+      {/* The navy panel runs under the status bar and native back chevron. */}
       {focused && <StatusBar style="light" animated />}
-      <View style={[styles.hero, { paddingTop: top + spacing.xl }]}>
+      <View style={[styles.hero, { paddingTop: headerHeight + spacing.xl }]}>
         <Txt variant="eyebrow" c={colors.lime}>
           Your shoes
         </Txt>
