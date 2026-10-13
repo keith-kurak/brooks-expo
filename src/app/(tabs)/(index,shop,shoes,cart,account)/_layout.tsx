@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router/stack';
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '@/theme';
+import { colors, header } from '@/theme';
 import { InTabContext } from '@/utils/native-tabs';
 
 export const unstable_settings = {
@@ -56,6 +56,7 @@ export default function TabStackLayout({ segment }: { segment: string }) {
               row all open it. Its full-bleed navy panel has no room for a
               header, so it draws its own back control. */}
           <Stack.Screen name="finder" options={{ headerShown: false }} />
+          <Stack.Screen name="health-data" options={{ ...header.sheet, headerTransparent: false, headerTitle: 'Your health' }} />
         </Stack>
       </View>
     </InTabContext>

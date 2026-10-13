@@ -269,6 +269,54 @@ store with no workouts. So the Finder treats an empty profile as a normal
 state: "Nothing to go on yet", with a pointer to the Health app, and the full
 quiz.
 
+## Profile health summary
+
+[confirmed — user, 2026-10-13] Profile needs a simple, minimal screen that
+shows the health data the app can display. Real data is the default, with an
+option to preview examples.
+
+[observed] Both the guest and member Profile rows now open **Your health**
+inside the tab's native stack. The screen reuses `BrooksActivity` and reads
+seven local calendar days, including today. Existing access is reused on entry
+and when the app returns to the foreground. Only **Connect Apple Health** or
+**Connect Health Connect** requests permissions. Loading, unavailable provider,
+missing access, empty reads and errors have separate states. Android offers the
+existing Health Connect installation/settings action.
+
+[observed] The live screen shows total distance and duration for recorded runs,
+walks and hikes, their elevation gain, average daily steps and the three most
+recent workouts. The step average divides the shared seven-day total by seven;
+the label says today is included because today's count is incomplete. Time is
+active workout time on iOS and elapsed session time on Android. It is not a
+recovery score or a recommendation.
+
+[observed] A missing distance or elevation in any workout makes the full
+aggregate unavailable, rather than displaying a partial sum. Recorded zero
+distance or elevation remains zero. No workouts or an all-zero step response
+shows no shared measurement, because HealthKit's read denial cannot be
+distinguished from an empty store. Permission checks continue to govern Android
+reads, so missing step/workout grants do not become fabricated records.
+
+[observed] **Preview examples** replaces the live values with screen-local
+sample records and a visible **Example data** label. It also shows sleep,
+resting heart rate and active energy under **More health possibilities**. The
+copy explicitly says Brooks does not read those yet. These data types exist in
+[HealthKit](https://developer.apple.com/documentation/healthkit/data-types)
+and [Health Connect](https://developer.android.com/health-and-fitness/health-connect/data-types),
+but this change adds no native queries or permissions for them. Availability
+depends on the recording device, apps and user grants.
+
+[observed] Neither live records nor example records are persisted by this
+screen. Examples never invoke the native sample-writing helper and never
+modify the health store. The screen uses Brooks typography, whitespace and
+rules, with the platform's own title and back control. Content is capped at
+600 points on tablets and desktop; metric columns can wrap on narrow screens.
+
+[observed] Calculation tests cover the calendar window, future/old records,
+sorting, missing measurements, recorded zero, steps-only access, example totals
+and minute rounding. Runtime and layout evidence is recorded in
+[`diaries/2026-10-13-expo-profile-health-data.md`](../diaries/2026-10-13-expo-profile-health-data.md).
+
 ## Android
 
 [confirmed — user, 2026-10-13] Integrate Android health support using the
