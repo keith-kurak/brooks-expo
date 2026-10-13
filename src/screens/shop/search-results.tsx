@@ -13,18 +13,16 @@ import { ShoeImage } from '@/components/shoe-image';
 import { Squiggle } from '@/components/squiggle';
 import { Txt } from '@/components/themed-text';
 import { catalog } from '@/data/catalog';
-import { autocomplete, type SearchHit, type Suggestions } from '@/data/constructor';
+import { autocomplete, type Suggestions } from '@/data/constructor';
 import { VOICE } from '@/data/editorial';
 import { heroImage } from '@/data/images';
-import { byId } from '@/data/query';
+import { filterSearchRows, searchRows, type SearchRow } from '@/data/search-results';
 import {
-  applySearchFilters,
   countSearchFilters,
   SEARCH_SORTS,
-  sortSearchResults,
 } from '@/data/search-query';
 import type { Product } from '@/data/types';
-import { clearSearchFilterState, patchSearchFilterState, useSearchFilterState } from '@/store/search-filters';
+import { clearSearchFilterState, patchSearchFilterState, SEARCH_FILTER_SCOPE, useSearchFilterState } from '@/store/search-filters';
 import { colors, spacing } from '@/theme';
 import { useJsTabBarHeight, useTabBarOverlap } from '@/utils/native-tabs';
 
@@ -43,13 +41,14 @@ import { useJsTabBarHeight, useTabBarOverlap } from '@/utils/native-tabs';
  * Filters and sort come from the `search-filters` form sheet through the store.
  */
 
-type Row = { hit: SearchHit; local: Product | undefined };
-
 export function SearchResults({ query }: { query: string }) {
-  const [live, setLive] = useState<Suggestions | null>(null);
+  const [response, setResponse] = useState<{ query: string; live: Suggestions | null; offline: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [offline, setOffline] = useState(false);
-  const { sort, filters } = useSearchFilterState();
+  const current = response?.query === query.trim() ? response : null;
+  const live = current?.live ?? null;
+  const offline = current?.offline ?? false;
+  const { sort, filters } = useSearchFilterState(SEARCH_FILTER_SCOPE);
+  const clearFilters = () => clearSearchFilterState(SEARCH_FILTER_SCOPE);
   const nFilters = countSearchFilters(filters);
 
   // The keyboard's frame, on the UI thread: the list ends above the keys rather
@@ -95,7 +94,7 @@ export function SearchResults({ query }: { query: string }) {
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) {
-      setLive(null);
+      setResponse(null);
       setLoading(false);
       return;
     }
@@ -104,12 +103,10 @@ export function SearchResults({ query }: { query: string }) {
     const t = setTimeout(async () => {
       try {
         const s = await autocomplete(q, { signal: ctrl.signal });
-        setLive(s);
-        setOffline(false);
+        if (!ctrl.signal.aborted) setResponse({ query: q, live: s, offline: false });
       } catch {
         if (!ctrl.signal.aborted) {
-          setLive(null);
-          setOffline(true);
+          setResponse({ query: q, live: null, offline: true });
         }
       } finally {
         if (!ctrl.signal.aborted) setLoading(false);
@@ -121,21 +118,10 @@ export function SearchResults({ query }: { query: string }) {
     };
   }, [query]);
 
-  /** Offline (or Constructor hiccup): search the snapshot by name instead. */
-  const localHits = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!offline || q.length < 2) return [];
-    return catalog.products
-      .filter(
-        (p) => p.name.toLowerCase().includes(q) || (p.franchise ?? '').toLowerCase().includes(q)
-      )
-      .slice(0, 8);
-  }, [offline, query]);
-
-  /** Hits joined to the snapshot, in the index's order. */
-  const joined = useMemo<Row[]>(
-    () => (live?.products ?? []).map((hit) => ({ hit, local: byId(catalog, hit.id) })),
-    [live]
+  /** Both live and offline rows use the same filtering and rendering path. */
+  const joined = useMemo(
+    () => live || offline ? searchRows(catalog.products, live?.products ?? null, query) : [],
+    [live, offline, query]
   );
 
   // The sheet derives its facets and live count from what this search found.
@@ -144,8 +130,9 @@ export function SearchResults({ query }: { query: string }) {
   useEffect(() => {
     patchSearchFilterState({
       candidates: joined.map((r) => r.local).filter((p): p is Product => p != null),
-    });
-    return () => patchSearchFilterState({ candidates: [] });
+      unmatchedCount: joined.filter((r) => !r.local).length,
+    }, SEARCH_FILTER_SCOPE);
+    return () => patchSearchFilterState({ candidates: [], unmatchedCount: 0 }, SEARCH_FILTER_SCOPE);
   }, [joined]);
 
   /**
@@ -153,19 +140,12 @@ export function SearchResults({ query }: { query: string }) {
    * that exist only in the live index drop out; with neither, they stay, in the
    * index's own order — which is what "Recommended for you" means.
    */
-  const rows = useMemo<Row[]>(() => {
-    if (nFilters === 0 && sort === 'recommended') return joined;
-    const locals = joined.map((r) => r.local).filter((p): p is Product => p != null);
-    const kept = sortSearchResults(applySearchFilters(locals, filters), sort);
-    const byProduct = new Map(joined.map((r) => [r.local?.id, r]));
-    return kept.map((p) => byProduct.get(p.id)).filter((r): r is Row => r != null);
-  }, [joined, filters, sort, nFilters]);
+  const rows = useMemo(() => filterSearchRows(joined, filters, sort), [joined, filters, sort]);
 
-  const openHit = (hit: SearchHit) => {
+  const openHit = ({ hit, local }: SearchRow) => {
     Keyboard.dismiss();
-    const local = byId(catalog, hit.id);
     if (local) {
-      router.push({ pathname: '/product/[id]', params: { id: hit.id } });
+      router.push({ pathname: '/product/[id]', params: { id: hit.id, color: local.colors[0]?.code } });
     } else {
       // In the live index but not the snapshot — land on search-in-category.
       router.push({
@@ -225,15 +205,22 @@ export function SearchResults({ query }: { query: string }) {
       )}
 
       {/* -------------------------------------------------- PRODUCT HITS -- */}
-      {live && joined.length > 0 && (
+      {offline && active && (
+        <View style={styles.block}>
+          <Txt variant="tiny" c={colors.inkMuted}>
+            Live search unreachable — searching the on-device catalog instead.
+          </Txt>
+        </View>
+      )}
+      {(live || offline) && joined.length > 0 && (
         <View style={{ marginTop: spacing.lg }}>
           <View style={styles.summary}>
-            <Txt variant="tiny" c={colors.inkMuted}>
+            <Txt testID="search-result-count" variant="tiny" c={colors.inkMuted}>
               {rows.length} {rows.length === 1 ? 'result' : 'results'}
               {sort !== 'recommended' ? ` · ${sortLabel}` : ''}
             </Txt>
             {nFilters > 0 ? (
-              <Press onPress={clearSearchFilterState} hitSlop={8}>
+              <Press onPress={clearFilters} hitSlop={8}>
                 <Txt variant="tiny" c={colors.blue}>
                   Clear filters ({nFilters})
                 </Txt>
@@ -244,7 +231,7 @@ export function SearchResults({ query }: { query: string }) {
             const imageUrl = local ? heroImage(local.colors[0]?.images ?? []) : hit.imageUrl;
             return (
               <View key={hit.id}>
-                <Press scaleTo={0.98} onPress={() => openHit(hit)} style={styles.hit}>
+                <Press scaleTo={0.98} onPress={() => openHit({ hit, local })} style={styles.hit}>
                   <View style={styles.hitImage}>
                     {imageUrl ? <ShoeImage url={imageUrl} width={64} height={64} /> : null}
                   </View>
@@ -283,46 +270,17 @@ export function SearchResults({ query }: { query: string }) {
                 label="Clear filters"
                 size="sm"
                 style={{ marginTop: spacing.lg }}
-                onPress={clearSearchFilterState}
+                onPress={clearFilters}
               />
             </View>
           )}
         </View>
       )}
 
-      {/* ------------------------------------------------ OFFLINE / LOCAL -- */}
-      {offline && active && (
-        <View style={styles.block}>
-          <Txt variant="tiny" c={colors.inkMuted} style={{ marginBottom: spacing.md }}>
-            Live search unreachable — searching the on-device catalog instead.
-          </Txt>
-          {localHits.map((p) => (
-            <Press
-              key={p.id}
-              scaleTo={0.98}
-              onPress={() => router.push({ pathname: '/product/[id]', params: { id: p.id } })}
-              style={[styles.hit, { paddingHorizontal: 0 }]}
-            >
-              <View style={styles.hitImage}>
-                <ShoeImage url={heroImage(p.colors[0]?.images ?? [])} width={64} height={64} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Txt variant="productTitle" numberOfLines={1}>
-                  {p.name}
-                </Txt>
-                <View style={{ marginTop: 3 }}>
-                  <Price value={p.price} listValue={p.listPrice} />
-                </View>
-              </View>
-            </Press>
-          ))}
-        </View>
-      )}
-
       {/* Products alone decide this, now that the index's term suggestions are
           no longer drawn: a query that returns terms but no shoes has nothing
           on screen to explain itself otherwise. */}
-      {live && live.products.length === 0 && (
+      {(live || offline) && joined.length === 0 && (
         <View style={[styles.block, { alignItems: 'center', paddingTop: spacing.xxl }]}>
           <Txt variant="h3">No matches for “{query.trim()}”</Txt>
           <Txt variant="body" c={colors.inkMuted} style={{ marginTop: spacing.sm, textAlign: 'center' }}>

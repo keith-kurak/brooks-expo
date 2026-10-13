@@ -12,7 +12,6 @@ import { Stars } from '@/components/stars';
 import { Txt } from '@/components/themed-text';
 import { GENDER_LABEL } from '@/data/labels';
 import {
-  applySearchFilters,
   COLOUR_FAMILIES,
   countSearchFilters,
   EMPTY_SEARCH_FILTERS,
@@ -21,7 +20,8 @@ import {
   type SearchFilters,
   type SearchSort,
 } from '@/data/search-query';
-import { getSearchFilterState, patchSearchFilterState, useSearchFilterState } from '@/store/search-filters';
+import { filterResultCount } from '@/data/search-results';
+import { getActiveSearchFilterScope, getSearchFilterState, patchSearchFilterState, useSearchFilterState } from '@/store/search-filters';
 import { border, colors, headerIcon, nativeSheetHeader, radius, spacing } from '@/theme';
 
 /**
@@ -58,22 +58,26 @@ function toggle(list: string[], value: string): string[] {
 
 export function SearchFilterSheet() {
   const insets = useSafeAreaInsets();
-  const { candidates } = useSearchFilterState();
-  const [draft, setDraft] = useState<SearchFilters>(() => getSearchFilterState().filters);
-  const [draftSort, setDraftSort] = useState<SearchSort>(() => getSearchFilterState().sort);
+  const [scope] = useState(getActiveSearchFilterScope);
+  const { candidates, unmatchedCount } = useSearchFilterState(scope);
+  const [draft, setDraft] = useState<SearchFilters>(() => getSearchFilterState(scope).filters);
+  const [draftSort, setDraftSort] = useState<SearchSort>(() => getSearchFilterState(scope).sort);
 
-  const features = useMemo(() => featureFacets(candidates), [candidates]);
+  const features = useMemo(() => {
+    const facets = featureFacets(candidates);
+    return [...facets, ...draft.features.filter((value) => !facets.some((f) => f.value === value)).map((value) => ({ value, count: 0 }))];
+  }, [candidates, draft.features]);
   const genders = useMemo(
-    () => [...new Set(candidates.map((p) => p.gender).filter((g): g is NonNullable<typeof g> => g != null))],
-    [candidates]
+    () => [...new Set([...candidates.map((p) => p.gender).filter((g): g is NonNullable<typeof g> => g != null), ...draft.gender])],
+    [candidates, draft.gender]
   );
-  const liveCount = useMemo(() => applySearchFilters(candidates, draft).length, [candidates, draft]);
+  const liveCount = useMemo(() => filterResultCount(candidates, unmatchedCount, draft, draftSort), [candidates, unmatchedCount, draft, draftSort]);
   const nDraft = countSearchFilters(draft);
 
   const set = (patch: Partial<SearchFilters>) => setDraft((d) => ({ ...d, ...patch }));
 
   const apply = () => {
-    patchSearchFilterState({ filters: draft, sort: draftSort });
+    patchSearchFilterState({ filters: draft, sort: draftSort }, scope);
     router.back();
   };
 
@@ -81,7 +85,7 @@ export function SearchFilterSheet() {
   // away and hand react-native-screens' form sheet eight children, which it
   // warns about and lays out wrongly.
   return (
-    <View collapsable={false} style={styles.root}>
+    <View testID="filter-sheet" collapsable={false} style={styles.root}>
       {nativeSheetHeader ? (
         <>
           <Stack.Toolbar placement="right">
@@ -122,7 +126,7 @@ export function SearchFilterSheet() {
           Sort by:
         </Txt>
         {SEARCH_SORTS.map((o) => (
-          <Radio key={o.key} selected={draftSort === o.key} onPress={() => setDraftSort(o.key)}>
+          <Radio key={o.key} label={o.label} testID={`sort-${o.key}`} selected={draftSort === o.key} onPress={() => setDraftSort(o.key)}>
             <Txt variant="body">{o.label}</Txt>
           </Radio>
         ))}
@@ -135,6 +139,8 @@ export function SearchFilterSheet() {
                 <Press
                   key={c.key}
                   accessibilityRole="checkbox"
+                  accessibilityLabel={c.label}
+                  testID={`filter-colour-${c.key}`}
                   accessibilityState={{ checked: selected }}
                   onPress={() => set({ colours: toggle(draft.colours, c.key) })}
                   style={styles.swatchRow}
@@ -153,6 +159,8 @@ export function SearchFilterSheet() {
           {RATINGS.map((r) => (
             <Radio
               key={r.value}
+              label={`${r.label} stars`}
+              testID={`filter-rating-${r.value}`}
               selected={draft.minRating === r.value}
               onPress={() => set({ minRating: draft.minRating === r.value ? undefined : r.value })}
             >
@@ -167,6 +175,7 @@ export function SearchFilterSheet() {
             {features.map((f) => (
               <Checkbox
                 key={f.value}
+                label={f.value}
                 checked={draft.features.includes(f.value)}
                 onPress={() => set({ features: toggle(draft.features, f.value) })}
               >
@@ -176,15 +185,16 @@ export function SearchFilterSheet() {
           </Section>
         )}
 
-        {genders.length > 1 && (
+        {(genders.length > 1 || draft.gender.length > 0) && (
           <Section title="Gender">
             {genders.map((g) => (
               <Checkbox
                 key={g}
+                label={GENDER_LABEL[g as keyof typeof GENDER_LABEL] ?? g}
                 checked={draft.gender.includes(g)}
                 onPress={() => set({ gender: toggle(draft.gender, g) })}
               >
-                <Txt variant="body">{GENDER_LABEL[g] ?? g}</Txt>
+                <Txt variant="body">{GENDER_LABEL[g as keyof typeof GENDER_LABEL] ?? g}</Txt>
               </Checkbox>
             ))}
           </Section>
@@ -195,6 +205,7 @@ export function SearchFilterSheet() {
       <Divider />
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.sm }]}>
         <Button
+          testID="filter-clear"
           title="Clear all"
           variant="secondary"
           style={{ flex: 1 }}
@@ -207,11 +218,12 @@ export function SearchFilterSheet() {
         {/* The count is the current search's, filtered by the draft. With no
             search there is nothing to count, so the button just says Apply. */}
         <Button
-          title={candidates.length && liveCount === 0 ? 'No matches' : 'Apply'}
+          testID="filter-apply"
+          title={(candidates.length + unmatchedCount) > 0 && liveCount === 0 ? 'No matches' : 'Apply'}
           accessory={
             liveCount > 0 ? `${liveCount} ${liveCount === 1 ? 'result' : 'results'}` : undefined
           }
-          disabled={candidates.length > 0 && liveCount === 0}
+          disabled={(candidates.length + unmatchedCount) > 0 && liveCount === 0}
           style={{ flex: 1 }}
           onPress={apply}
         />
@@ -240,11 +252,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Radio({ selected, onPress, children }: { selected: boolean; onPress: () => void; children: ReactNode }) {
+function Radio({ selected, onPress, children, label, testID }: { selected: boolean; onPress: () => void; children: ReactNode; label: string; testID?: string }) {
   return (
     <Press
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+      testID={testID}
+      accessibilityState={{ checked: selected }}
       onPress={onPress}
       style={styles.optionRow}
     >
@@ -256,10 +270,11 @@ function Radio({ selected, onPress, children }: { selected: boolean; onPress: ()
   );
 }
 
-function Checkbox({ checked, onPress, children }: { checked: boolean; onPress: () => void; children: ReactNode }) {
+function Checkbox({ checked, onPress, children, label }: { checked: boolean; onPress: () => void; children: ReactNode; label: string }) {
   return (
     <Press
       accessibilityRole="checkbox"
+      accessibilityLabel={label}
       accessibilityState={{ checked }}
       onPress={onPress}
       style={styles.optionRow}

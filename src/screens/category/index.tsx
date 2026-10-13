@@ -26,7 +26,7 @@ import {
 import type { Product } from '@/data/types';
 import {
   clearSearchFilterState,
-  patchSearchFilterState,
+  activateSearchFilters,
   useSearchFilterState,
 } from '@/store/search-filters';
 import { colors, headerIcon, spacing } from '@/theme';
@@ -62,7 +62,8 @@ export function Category({
   const headerHeight = useHeaderHeight();
   const [showBarTitle, setShowBarTitle] = useState(false);
 
-  const { filters, sort } = useSearchFilterState();
+  const scope = JSON.stringify(['category', id, franchise ?? '']);
+  const { filters, sort } = useSearchFilterState(scope);
   const nFilters = countSearchFilters(filters);
 
   /** The category, narrowed to one franchise when a franchise tile opened it. */
@@ -84,18 +85,16 @@ export function Category({
   };
 
   /**
-   * The sheet counts and facets whatever `candidates` holds, so this screen
-   * hands it the category just before presenting. Set on press rather than on
-   * mount because Browse's results, still mounted under this push, own the
-   * same slot while they are on screen.
+   * Publish this listing's candidates and bind the sheet to its scope on open.
+   * @ref LLP 0003#filter-correctness — Mounted search results own another scope.
    */
   const openFilters = () => {
-    patchSearchFilterState({ candidates: base });
+    activateSearchFilters(scope, base);
     router.push('/search-filters');
   };
 
   return (
-    <View style={styles.root}>
+    <View testID="category-screen" style={styles.root}>
       {/* The stack's own bar: the system back chevron, and `Filter & sort` in
           the trailing slot with the applied count as the item's badge. The
           title stays empty until the in-content large title has scrolled
@@ -128,7 +127,7 @@ export function Category({
         ListHeaderComponent={
           <View style={styles.head}>
             <Txt variant="h1">{screenTitle}</Txt>
-            <Txt variant="caption" c={colors.inkMuted} style={{ marginTop: 4 }}>
+            <Txt testID="category-result-count" variant="caption" c={colors.inkMuted} style={{ marginTop: 4 }}>
               {products.length} {products.length === 1 ? 'style' : 'styles'}
               {sort !== 'recommended' ? ` · ${sortLabel}` : ''}
             </Txt>
@@ -146,7 +145,7 @@ export function Category({
             <Chip
               label="Clear filters"
               style={{ marginTop: spacing.lg }}
-              onPress={clearSearchFilterState}
+              onPress={() => clearSearchFilterState(scope)}
             />
           </View>
         }

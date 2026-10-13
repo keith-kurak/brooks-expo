@@ -5,7 +5,7 @@
 **Systems:** Brooks, Shared, Expo App, Exact App, Data
 **Author:** Claude Fable 5
 **Date:** 2026-07-13
-**Revised:** 2026-07-14
+**Revised:** 2026-10-13
 **Related:** LLP 0000, LLP 0003, LLP 0004
 
 ## Summary
@@ -235,6 +235,14 @@ fit dimensions, and three reviews already rendered on each public PDP; all-revie
 and write-review actions hand off to the Brooks product page.
 
 ## The image CDN
+
+[observed 2026-10-13] The reachability described below is not universal.
+During filter QA, the resized Adrenaline GTS 25 men's color 410 lateral image
+returned `403 text/html` at `sw=688&sh=688&sm=fit&sfrm=png&strip=false&bgcolor=F8F8F8`.
+The simulator left several newly selected colorway photographs blank while
+other photographs rendered. Filter membership and color parameters can
+be checked independently, but this response prevents complete photo validation.
+No bypass or re-harvest was attempted.
 
 [observed] Open to any client, and it resizes on demand:
 

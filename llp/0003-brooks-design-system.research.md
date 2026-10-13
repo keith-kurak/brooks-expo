@@ -959,6 +959,47 @@ It is a native module, so the app needs a dev build; Expo Go already could not
 run this project (LLP 0000's Expo Go target is [superseded] in practice since
 the worklets crash recorded in the diaries).
 
+#### Filter correctness
+
+[observed 2026-10-13] The earlier shared applied state is **Superseded**.
+The sheet and vocabulary are still shared, but search and each category/franchise
+listing keep independent filters, sort, and candidates. The sheet captures its
+opening scope; Apply commits there, while closing discards its local draft.
+Returning to a listing restores its selections. Background search updates cannot
+replace a category's candidates or counts.
+
+[inferred 2026-10-13] A shopper opening Women's Shoes should see that category
+without a Men's selection inherited from another listing. Per-listing state
+supports that expectation while preserving selections during back navigation.
+
+[observed 2026-10-13] Color filtering now returns product views containing only
+matching colorways, without mutating the catalog. Tiles and search rows therefore
+use matching photographs, swatches, prices, and PDP color parameters. Tile
+selection uses a color code instead of an index so a changed color list cannot
+silently select another color. Family membership still uses the existing
+name-based heuristics; these remain inferred, not Brooks's primary-color facets.
+
+[observed 2026-10-13] Live and offline search share the same row/filter/sort
+pipeline. Offline search considers the complete name/franchise match set before
+filtering. Duplicate live style IDs collapse to one row. Live-only products remain
+in the unfiltered recommended view and count toward its Apply total; filters or
+another sort require snapshot data and exclude those rows. Responses are tagged
+with their query, and aborted responses cannot replace current results.
+
+[observed 2026-10-13] Five stars requires a rating of at least 5; the old 4.75
+threshold was inconsistent with that label. Unknown prices sort last in both
+directions. Features combine with AND; colors and genders combine with OR.
+The sheet retains selected features outside its eight common options and selected
+genders outside the current candidates, so every active selection stays removable.
+
+[observed 2026-10-13] `bun run test:filters` covers 1,840 color/gender/rating
+combinations, feature intersections, sorting, offline matches, live-only rows,
+counts, and scope isolation. Direct Argent checks on iPad mini / iOS 26.5 verified
+Black plus price sorting, Pink, Apply, cancel after Clear all, committed reset,
+category isolation, live search ratings, and disabled Apply for zero matches.
+Replay recording was not certified: capture sometimes targeted the mounted Home
+video instead of the foreground listing, and AX identifiers were inconsistent.
+
 ### Pushed screens wear the native header
 
 [observed 2026-08-26] The blue collapsing header above belongs to the five tab
@@ -1025,6 +1066,9 @@ and vice versa, which is also how the site behaves — its panel is one componen
 wherever it opens. A franchise tile still narrows the PLP, as a fixed scope
 rather than a toggled chip; the search button is gone, since Browse — one pop
 away — *is* the search screen.
+
+[Superseded 2026-10-13] The preceding paragraph's single applied state is
+replaced by per-listing state. See [Filter correctness](#filter-correctness).
 
 [observed 2026-09-24] **The PLP wears the native bar again, and so do the
 sheets.** A human asked for every screen with custom header buttons to use
