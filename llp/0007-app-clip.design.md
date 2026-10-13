@@ -80,7 +80,7 @@ web and in Expo Go the module is not linked, so `isAppClip` is false.
 
 ## What the Clip leaves out
 
-`targets/clip/pods.rb` excludes three autolinked modules:
+`targets/clip/pods.rb` excludes these autolinked modules:
 
 - **`expo-updates`.** [observed — apple-targets README and the template's
   `pods.rb`] An App Clip with `expo-updates` fails to build. So the Clip runs
@@ -95,6 +95,10 @@ web and in Expo Go the module is not linked, so `isAppClip` is false.
   Health". The PDP hides its "Already run in these?" row in the Clip.
 - **`expo-widgets`.** An App Clip has no widget. The widget JS already reads
   a missing module as "no widget" (LLP 0006).
+- **`expo-background-task` and `expo-task-manager`.** [observed 2026-10-13]
+  Scheduled Health sync belongs to the full app. The shared JavaScript entry
+  guards their imports in the Clip, so no task is defined or registered there
+  (LLP 0006#background-health-sync).
 
 ## Routes
 

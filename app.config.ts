@@ -32,6 +32,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     ...(config.plugins ?? []),
+    // Scheduled Health reads. @ref LLP 0006#background-health-sync
+    'expo-background-task',
     // HealthKit entitlement and usage strings. @ref LLP 0005#read-only-by-default
     './modules/brooks-activity/app.plugin.js',
     // The shoe mileage widget. The App Group is named here, not left to the

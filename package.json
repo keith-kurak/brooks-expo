@@ -1,13 +1,14 @@
 {
   "name": "brooks-expo",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@bacons/apple-targets": "^5.0.0",
     "@expo-google-fonts/caveat": "^0.4.2",
     "@expo/metro-runtime": "~57.0.16",
     "@expo/ui": "~57.0.22",
     "expo": "~57.0.27",
+    "expo-background-task": "~57.0.21",
     "expo-constants": "~57.0.21",
     "expo-dev-client": "~57.0.19",
     "expo-file-system": "~57.0.7",
@@ -21,6 +22,7 @@
     "expo-splash-screen": "~57.0.9",
     "expo-sqlite": "~57.0.4",
     "expo-status-bar": "~57.0.0",
+    "expo-task-manager": "~57.0.21",
     "expo-updates": "~57.0.25",
     "expo-video": "~57.0.5",
     "expo-widgets": "~57.0.23",

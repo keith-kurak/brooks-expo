@@ -1,7 +1,6 @@
 {
   "platforms": ["apple"],
   "apple": {
-    "modules": ["BrooksActivityModule"],
-    "appDelegateSubscribers": ["BrooksHealthSyncSubscriber"]
+    "modules": ["BrooksActivityModule"]
   }
 }
