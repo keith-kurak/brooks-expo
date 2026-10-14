@@ -10,12 +10,12 @@ A working mobile shopping prototype inspired by [Brooks Running](https://www.bro
 
 - Home mirrors the current Brooks campaign with the Ghost Amp video hero, product rails, editorial cards, and the "Longer days. Longer runs." feature.
 - Browse covers categories and franchises. Its search field swaps the screen into live Constructor.io results, with suggestions, filters, sorting, and an on-device fallback when the service is unavailable.
-- The Shoes tab tracks the pairs the runner owns. Each pair has a start date and a mileage limit; on iOS the app adds up the Apple Health workout distance since that date and says when a pair is "70% done, time to replace." A home screen and Lock Screen widget (`expo-widgets`) shows the same number, shared through an App Group.
-- Shoe Finder starts from Apple Health on iOS: it reads eight weeks of runs, walks and steps, fills the answers the data supports, and asks the rest. The questions, branches and barefoot-test videos are the ones brooksrunning.com's own Shoe Finder uses. It ranks products from the bundled catalog.
+- Profile's Your shoes screen tracks the pairs you own. It counts recorded workout distance from Apple Health on iOS or Health Connect on Android, starting at each pair's start date, and says when a pair is "70% done, time to replace." The iOS home screen and Lock Screen widget shows the same mileage.
+- Shoe Finder reads runs, walks and steps from Apple Health or Health Connect, fills the answers your activity supports, and asks the rest. The questions, branches and barefoot-test videos are the ones brooksrunning.com's own Shoe Finder uses. It ranks products from the bundled catalog.
 - Product details include a swipeable gallery, colorways, widths, per-size availability, specifications, fit data, reviews, and a persistent add-to-cart flow.
 - Cart supports quantity changes, swipe-to-remove with undo, totals, and persisted items. Checkout displays the prototype boundary instead of contacting Brooks.
 - Brooks Run Club membership is a local demo state. Names and email addresses stay on the device.
-- The app uses native stack headers and sheets, an app-owned five-tab bar, reduced-motion behavior, and Apple zoom transitions on iOS 18 and newer.
+- The app uses native stack headers and sheets, an app-owned four-tab bar (Home, Browse, Cart, Profile), reduced-motion behavior, and Apple zoom transitions on iOS 18 and newer.
 
 The repository has iOS, Android, and web scripts. The store-delivery workflow ships iOS to TestFlight and Android to the Google Play internal testing track.
 
@@ -50,6 +50,16 @@ Because this project includes `expo-dev-client`, that command targets the develo
 ```sh
 bunx expo start --go
 ```
+
+## Connect your activity
+
+Health integration requires a development or store build. Expo Go and web use manual mileage and the full Finder quiz. Android builds require Android 8 or newer; Health Connect requires Android 9 or newer with Google Play services. On Android 9–13, install Health Connect from Google Play. Android 14 and newer include it.
+
+Open Shoe Finder and tap **Connect Health Connect**, or add a pair in **Shoes** and allow access when prompted. Your recording app must share workouts and distance with Health Connect. Brooks reads activity and keeps it on your phone.
+
+Allow earlier history to count mileage from an older pair's start date. Without it, the Finder uses four weeks rather than eight. If Brooks cannot read a pair's full history or a workout has no distance, it keeps the last saved total and explains what is missing. **Manage Health Connect access** opens settings so you can change permissions.
+
+Background access is optional. Without it, mileage refreshes when you open Brooks or pull down in Shoes. With it, Android can also schedule updates while Brooks is closed. These updates are deferred, rather than immediate after a run.
 
 ## Checks
 
@@ -116,7 +126,7 @@ src/
   store/               Cart, member, and search state
   theme/               Color, type, spacing, motion, and header tokens
   utils/               Storage, haptics, and formatting
-modules/               Local Expo modules (Apple Health, App Clip)
+modules/               Local Expo modules (Apple Health, Health Connect, App Clip)
 targets/clip/          The iOS App Clip target
 plugins/               Local config plugins
 public/                Web index.html and apple-app-site-association
@@ -145,6 +155,8 @@ The app uses the `fingerprint` runtime version policy, so an update can only rea
 The first run after this change needs a new native build, because older binaries do not include `expo-updates`. Testers must install that build from TestFlight before they can receive updates. An update does not create a new TestFlight build number.
 
 The Android submission needs two things outside this repository: the app `com.exponathan.ecommercedemo` must exist in Google Play Console, and the EAS project must have a Google Service Account key for Play submissions. See [Submit to the Google Play Store](https://docs.expo.dev/submit/android/). The submit profile in `eas.json` sends builds to the `internal` track.
+
+Before publishing health support, complete the Google Play Health apps declaration for the six read permissions in the activity module's manifest. The public privacy policy must match the policy shown from Health Connect. See [LLP 0005's Android release notes](./llp/0005-activity-informed-finder.design.md#android).
 
 Run it manually with an Expo account that has access to the configured EAS, App Store Connect, and Google Play projects:
 
@@ -183,8 +195,8 @@ This repository uses [Linked Literate Programming](https://github.com/ccheever/l
 - [LLP 0002: The Brooks commerce API](./llp/0002-brooks-commerce-api.research.md) explains the data and network architecture. Read it before changing `src/data/` or `packages/catalog/`.
 - [LLP 0003: Brooks design system and screen patterns](./llp/0003-brooks-design-system.research.md) records brand tokens, navigation, motion, and current screen decisions.
 - [LLP 0004: Building on Exact today](./llp/0004-building-on-exact.research.md) preserves research from the original monorepo.
-- [LLP 0005: Activity-informed Shoe Finder](./llp/0005-activity-informed-finder.design.md) explains how the Finder reads Apple Health through the local `modules/brooks-activity` module.
-- [LLP 0006: Shoe mileage and the Shoes tab](./llp/0006-shoe-mileage.design.md) explains the owned-shoes store, how mileage is counted, and how the widget gets its number.
+- [LLP 0005: Activity-informed Shoe Finder](./llp/0005-activity-informed-finder.design.md) explains the Apple Health and Health Connect readers and permission handling.
+- [LLP 0006: Shoe mileage and Your shoes](./llp/0006-shoe-mileage.design.md) explains the owned-shoes store, how mileage is counted, and how the widget gets its number.
 - [AGENTS.md](./AGENTS.md) contains working rules for AI agents, including LLP and diary requirements.
 
 Code uses `@ref LLP NNNN#section` comments where a non-obvious implementation decision needs its rationale close by.

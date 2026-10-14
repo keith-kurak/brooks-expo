@@ -5,6 +5,7 @@
 **Systems:** Expo App
 **Author:** Claude Opus 5.5
 **Date:** 2026-09-29 (Health-first flow and Next button: 2026-09-30; the site's own questions: 2026-10-05)
+**Revised:** 2026-10-13
 **Related:** LLP 0000, LLP 0002, LLP 0003, LLP 0006
 
 ## Summary
@@ -18,15 +19,17 @@ Results quote the shopper's own numbers in their reasons.
 The Finder is Health-first: where Health is available, Health is the main way
 in and the quiz is the fallback (see [Health first](#health-first)).
 
-[observed 2026-10-06] The Finder is no longer a tab. The Shoes tab
-(LLP 0006#the-shoes-tab) pushes it, and so do Browse and Profile. Opened from
+[observed 2026-10-13] The Finder is no longer a tab. Your shoes, now opened
+from Profile (LLP 0006#shoes-opens-from-profile), pushes it, and so do Browse
+and Profile directly. Opened from
 a worn pair, it also knows the pair it is replacing
 (LLP 0006#replacing-a-pair). The same Health workouts now also count the
 miles on the runner's shoes (LLP 0006#mileage-is-workout-distance).
 
-The reader is a local Expo module, `modules/brooks-activity`. It is iOS only
-today. On Android and web, the module resolves to `null` and the Finder shows no
-Health entry point.
+[observed 2026-10-13] The reader is a local Expo module,
+`modules/brooks-activity`, with Swift HealthKit and Kotlin Health Connect
+implementations. Android connection, permissions and history handling are
+described in [Android](#android). Expo Go and web retain the manual quiz.
 
 ## Health first
 
@@ -58,7 +61,7 @@ icons, so the square Brooks corner rule (LLP 0003) does not apply to them.
 
 The quiz is the fallback in three cases: the shopper picks "Answer the
 questions instead", the profile is empty or too thin to fill an answer, or
-Health is not available at all. In the last case (Android, web) the Finder
+Health is not available at all. In the last case, including web and Expo Go, the Finder
 shows the old welcome screen and "Let's go". There is no Health copy there.
 
 The profile still lives in screen state only. "Retake the quiz" keeps the
@@ -272,21 +275,167 @@ store with no workouts. So the Finder treats an empty profile as a normal
 state: "Nothing to go on yet", with a pointer to the Health app, and the full
 quiz.
 
+## Profile health summary
+
+[confirmed — user, 2026-10-13] Profile needs a simple, minimal screen that
+shows the health data the app can display. Real data is the default, with an
+option to preview examples.
+
+[confirmed — user, 2026-10-13] This is a data demo screen. Use data labels and
+values, with no customer pitch, reassurance paragraphs or promotional empty
+headings. The previous customer wording is **Superseded**.
+
+[observed] Both the guest and member Profile rows now open **Health data**
+inside the tab's native stack. Its route is
+`src/app/(tabs)/(index,shop,cart,account)/health-data.tsx`, following the
+four-tab route group after Shoes moved into Profile (LLP 0006#shoes-opens-from-profile).
+The screen reuses `BrooksActivity` and reads
+seven local calendar days, including today. Existing access is reused on entry
+and when the app returns to the foreground. Only **Connect Apple Health** or
+**Connect Health Connect** requests permissions. Loading, unavailable provider,
+missing access, empty reads and errors have separate states. Android offers the
+existing Health Connect installation/settings action.
+
+[observed] The live screen shows total distance and duration for recorded runs,
+walks and hikes, their elevation gain, average daily steps and the three most
+recent workouts. The step average divides the shared seven-day total by seven;
+the label says **7-day average**. Today's count is incomplete. Time is
+active workout time on iOS and elapsed session time on Android. It is not a
+recovery score or a recommendation.
+
+[observed] A missing distance or elevation in any workout makes the full
+aggregate unavailable, rather than displaying a partial sum. Recorded zero
+distance or elevation remains zero. No workouts or an all-zero step response
+shows no shared measurement, because HealthKit's read denial cannot be
+distinguished from an empty store. Permission checks continue to govern Android
+reads, so missing step/workout grants do not become fabricated records.
+
+[observed] The tabs are **Live data** and **Sample data**. Sample data replaces
+the live values with screen-local records and a visible **Sample data** label.
+It also shows sleep, resting heart rate and active energy under **Additional
+metrics**, only in sample mode. These remain sample values; Brooks does not
+read them yet. These data types exist in
+[HealthKit](https://developer.apple.com/documentation/healthkit/data-types)
+and [Health Connect](https://developer.android.com/health-and-fitness/health-connect/data-types),
+but this change adds no native queries or permissions for them. Availability
+depends on the recording device, apps and user grants.
+
+[observed] Neither live records nor example records are persisted by this
+screen. Examples never invoke the native sample-writing helper and never
+modify the health store. The screen uses Brooks typography, whitespace and
+rules, with the platform's own title and back control. Content is capped at
+600 points on tablets and desktop; metric columns can wrap on narrow screens.
+
+[observed] Calculation tests cover the calendar window, future/old records,
+sorting, missing measurements, recorded zero, steps-only access, example totals
+and minute rounding. Runtime and layout evidence is recorded in
+[`diaries/2026-10-13-expo-profile-health-data.md`](../diaries/2026-10-13-expo-profile-health-data.md).
+
 ## Android
 
-Not built. [observed 2026-09-29] `android/` is generated by prebuild and
-gitignored, and it has not been generated in this worktree, so no Android
-build has been tried. The Health Connect work is:
+[confirmed — user, 2026-10-13] Integrate Android health support using the
+Health Connect design researched here. The initial 2026-09-29 outline and
+2026-10-13 proposal are **Superseded** by this implementation.
 
-- A Kotlin reader for `StepsRecord` (aggregate), `ExerciseSessionRecord` and
-  `DistanceRecord`, returning the same two record shapes.
-- The permission request through `RegisterActivityContracts` (in
-  `expo-modules-core`, used by `expo-file-system`).
-- The manifest entries that `react-native-health-connect`'s plugin adds: the
-  `androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE` intent filter (Android 13
-  and earlier) and the `ViewPermissionUsageActivity` alias (Android 14 and
-  later), plus a privacy-policy screen.
-- `minSdkVersion` 26, and the Google Play health-permissions declaration.
+[observed] `modules/brooks-activity/android` uses Health Connect 1.1.0 and
+Expo Modules activity contracts on Android 9–13 and Expo
+PermissionsService on Android 14 and newer. Its manifest requests read-only exercise,
+distance, steps, elevation, earlier history and background access. It includes
+the provider package query, privacy rationale activity and Android 14
+permission-usage alias. The rationale is native and works without starting
+React Native. The Android app's minimum is API 26; the provider still needs
+API 28. Phones without a supported provider retain manual mileage and quiz
+answers. Missing/outdated providers get an installation action.
+
+[observed] 1.2.0-alpha06 required AGP 9.1 and a newer compile SDK, while this
+Expo SDK 57 project uses AGP 8.12 and compile SDK 36. The stable 1.1.0 release
+works with that toolchain, but requires the API 26 minimum configured by
+`app.plugin.js`. This supersedes the research assumption that the newest SDK
+could preserve API 24 support without a toolchain change.
+See [Health Connect releases](https://developer.android.com/jetpack/androidx/releases/health-connect).
+
+[observed] `getAvailability`, `getAccessAsync` and `openSettingsAsync` supplement
+the shared reader API. `src/utils/health.ts` uses explicit Android grants and
+capabilities; older iOS binaries keep using HealthKit's sheet-answered check.
+Every read rechecks grants. Android 14+ permission requests return through
+`onRequestPermissionsResult`; the activity-result adapter alone left a declined
+request pending in runtime QA. The permission service handles that callback.
+The public `ACTION_HEALTH_CONNECT_SETTINGS` opens recovery settings. The direct
+`MANAGE_HEALTH_PERMISSIONS` intent required a privileged permission on the API 36
+emulator and is not used. Connection screens refresh access when the app
+returns to the foreground, so installation and permission changes do not need
+a restart. Requests happen only after a tap, never from a scheduled task.
+
+[observed] Running, treadmill-running, walking and hiking sessions become the
+same summaries used by the Finder and shoe store. The reader paginates sessions
+until the token is null or empty. Distance and elevation are aggregated over
+each session's interval, restricted to its recording source. Daily steps use
+unfiltered aggregates in local calendar-day windows, including phone steps.
+Days follow the current time zone and account for daylight-saving changes.
+See [Workouts](https://developer.android.com/health-and-fitness/health-connect/experiences/workouts)
+and [Aggregation](https://developer.android.com/health-and-fitness/health-connect/aggregate-data).
+
+[inferred — implemented duplicate policy] Aggregate deduplication does not
+remove duplicate session records. `selectWorkouts` keeps one same-kind session
+when different sources overlap for at least 80% of the longer session. It
+prefers a source with distance, then elevation, then stable package/record ID
+ordering. Same-source sessions and short sessions nested in a much longer
+workout remain separate. This is a heuristic, not a Health Connect guarantee;
+real provider imports still need testing. Distance and elevation may be absent.
+Only treadmill sessions have known indoor status; generic running is unknown.
+Android duration is elapsed session time and is not used in mileage or Finder
+inference. No routes or heart-rate permissions are requested.
+
+[observed] Earlier history and background access are separately feature-checked
+and requested only when available. Without history permission the reader uses
+a conservative 28-day window, safely inside the default first-grant history
+boundary. It does not persist a guessed grant date. The Finder displays four
+weeks and divides by four; missing distance, elevation, indoor status or workout
+access cannot silently fill unsupported answers. This supersedes the previous
+assumption that a missing distance meant a zero-mile training week.
+See [Read restrictions](https://developer.android.com/health-and-fitness/health-connect/read-data).
+
+[observed] Mileage needs the entire window from each pair's start date. If that
+window is beyond readable history, or a matching workout has no distance,
+refresh fails without replacing cached totals or the last successful read time.
+The Shoes tab explains the issue and offers Health Connect settings. Revoked
+exercise/distance access skips reading and retains cached mileage. An empty,
+fully readable workout list still recomputes zero, so deletions are reflected.
+The Android add-pair form now uses the native Material date picker for an exact
+start date. Manual starting mileage remains available.
+
+[observed] The existing Expo BackgroundTask runs only with active shoes,
+exercise/distance grants, readable full history and background-read access. Foreground refresh works
+without background access. Revocation unregisters the scheduled job and the
+worker independently checks access before reading. The requested minimum
+interval remains 60 minutes; actual execution is deferred by Android.
+See LLP 0006#background-health-sync and
+[Expo SDK 57 BackgroundTask](https://docs.expo.dev/versions/v57.0.0/sdk/background-task/).
+
+[observed] Health data stays on the phone. Finder profiles live in screen state;
+only shoe aggregates are cached. Full recomputation handles deletions without a
+raw-workout database or changes-token store. Android home-screen widgets remain
+separate work; the current `expo-widgets` publisher is iOS only.
+
+[observed — release requirement] The Google Play Health apps declaration must
+cover all six manifest permissions and their purposes, and the published
+privacy policy must match the native rationale. This change does not submit a
+Play release or update Console declarations.
+See [Publishing](https://developer.android.com/health-and-fitness/health-connect/publish).
+
+[observed — API 36 emulator] The connected Finder read an empty store.
+Revoked/denied access returned to the manual path; the public settings link
+allowed grants to be restored. A Ghost 17 with an exact September 28 start date
+and 100 starting miles showed 25% and 100 of 400 miles after a successful read.
+The OS registered a WorkManager job with a one-hour minimum latency.
+A forced run while the app was backgrounded finished successfully and
+re-enqueued the next worker for 60 minutes. Automatic OS scheduling remains
+a hardware follow-up.
+
+The research record is
+[`diaries/2026-10-13-research-android-health-connect.md`](../diaries/2026-10-13-research-android-health-connect.md).
+Implementation and verification evidence is in
+[`diaries/2026-10-13-expo-android-health-connect.md`](../diaries/2026-10-13-expo-android-health-connect.md).
 
 ## Open questions
 

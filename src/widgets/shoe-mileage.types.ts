@@ -18,7 +18,7 @@ export interface ShoeMileageWidgetProps {
   /** "About 3 weeks at your pace", or empty. */
   pace: string;
   replace: boolean;
-  /** Opens the Shoes tab. */
+  /** Opens Your shoes in Profile's stack. */
   url: string;
   /** "248": the miles alone, for the readout. */
   milesShort: string;

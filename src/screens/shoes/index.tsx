@@ -1,4 +1,5 @@
-import { router, useIsFocused } from 'expo-router';
+import { router, Stack, useIsFocused } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Alert, RefreshControl, StyleSheet, View } from 'react-native';
@@ -6,12 +7,11 @@ import { Alert, RefreshControl, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { BrooksIcon } from '@/components/icons';
 import { Press } from '@/components/press';
-import { ScreenHeading, ScreenScrollView, useScreenTopPadding } from '@/components/screen';
+import { ScreenHeading, ScreenScrollView } from '@/components/screen';
 import { ShoeImage } from '@/components/shoe-image';
 import { TabIcon } from '@/components/tab-icon';
 import { Txt } from '@/components/themed-text';
 import {
-  isMileageAvailable,
   mileageOf,
   REPLACE_AT,
   weeksLeftLabel,
@@ -19,30 +19,31 @@ import {
   type OwnedShoe,
 } from '@/data/mileage';
 import { refreshMileage, removeShoe, retireShoe, useShoes } from '@/store/shoes';
-import { border, colors, spacing } from '@/theme';
+import { border, colors, header, spacing } from '@/theme';
 import { useTabBarOverlap } from '@/utils/native-tabs';
+import { HEALTH_NAME, IS_HEALTH_CONNECT, openHealthSettings, useHealthAccess } from '@/utils/health';
 
 import { imageOf, successorOf } from './replacement';
 
-/** Read once: availability does not change while the app runs. */
-const HEALTH = isMileageAvailable();
-
-const FINDER = '/(tabs)/(shoes)/finder' as const;
+const FINDER = '/(tabs)/(account)/finder' as const;
 
 /**
- * The Shoes tab: the pairs the runner owns, how far each has gone, and the
+ * Your shoes: the pairs the runner owns, how far each has gone, and the
  * way to the next pair.
  *
- * @ref LLP 0006#the-shoes-tab — This tab used to be the Shoe Finder alone. A
- * quiz is something a shopper takes once a year; a pair's miles change every
- * run. So the tab leads with the pairs, and the Finder is where a worn pair
- * sends the runner, already knowing what they run in.
+ * @ref LLP 0006#shoes-opens-from-profile — Profile pushes this screen with
+ * a native back chevron. Its Finder pushes stay on the same stack, so Back
+ * returns to the pair before returning to Profile.
  */
 export function Shoes() {
   const state = useShoes();
+  const { access } = useHealthAccess();
+  const HEALTH = access.status === 'available';
   const active = state.shoes.filter((s) => s.retiredAt == null);
   const retired = state.shoes.filter((s) => s.retiredAt != null);
   const [refreshing, setRefreshing] = useState(false);
+  const headerHeight = useHeaderHeight();
+  const focused = useIsFocused();
 
   if (state.shoes.length === 0) return <Empty />;
 
@@ -54,10 +55,13 @@ export function Shoes() {
 
   return (
     <ScreenScrollView
+      contentContainerStyle={{ paddingTop: headerHeight + spacing.xl }}
       refreshControl={HEALTH ? <RefreshControl refreshing={refreshing} onRefresh={pull} /> : undefined}
     >
+      <Stack.Screen options={{ headerTintColor: header.tint }} />
+      {focused && <StatusBar style="dark" animated />}
       <ScreenHeading>Your shoes.</ScreenHeading>
-      <HealthNote readAt={state.readAt} />
+      <HealthNote readAt={state.readAt} error={state.syncError} />
 
       <View style={{ gap: spacing.xl, marginTop: spacing.lg }}>
         {active.map((shoe) => (
@@ -84,42 +88,52 @@ export function Shoes() {
 }
 
 /** Where the miles come from, and when they were last read. */
-function HealthNote({ readAt }: { readAt: number | null }) {
+function HealthNote({ readAt, error }: { readAt: number | null; error: string | null }) {
   const [asking, setAsking] = useState(false);
-  if (!HEALTH) {
-    return (
-      <Txt variant="bodySmall" c={colors.inkMuted} style={styles.note}>
-        Miles from Apple Health need an iPhone. Here, each pair keeps the miles you gave it.
-      </Txt>
-    );
+  const { access, reload } = useHealthAccess();
+  if (access.status === 'unavailable') {
+    return <Txt variant="bodySmall" c={colors.inkMuted} style={styles.note}>
+      Health data is unavailable here. Each pair keeps the miles you gave it.
+    </Txt>;
   }
-  if (readAt == null) {
-    // Health has never been read: the shopper has not answered its sheet yet.
-    return (
-      <Press
-        style={styles.connect}
-        accessibilityRole="button"
-        disabled={asking}
-        onPress={async () => {
-          setAsking(true);
-          await refreshMileage({ ask: true });
-          setAsking(false);
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Txt variant="productTitle">Count miles from Apple Health</Txt>
-          <Txt variant="bodySmall" c={colors.inkMuted}>
-            Brooks adds up your runs since each start date. The data stays on this iPhone.
-          </Txt>
-        </View>
-        <BrooksIcon name="caretRight" size={14} color={colors.ink} />
-      </Press>
-    );
-  }
+  const connected = access.workouts && access.distance;
+  const connect = async () => {
+    setAsking(true);
+    try {
+      if (access.status === 'install-required') await openHealthSettings();
+      else await refreshMileage({ ask: true });
+    } finally { await reload(); setAsking(false); }
+  };
   return (
-    <Txt variant="bodySmall" c={colors.inkMuted} style={styles.note}>
-      From your Apple Health workouts, read {sinceLabel(readAt)}. Pull down to read again.
-    </Txt>
+    <View>
+      {readAt == null || !connected || error ? (
+        <Press style={styles.connect} accessibilityRole="button" disabled={asking} onPress={connect}>
+          <View style={{ flex: 1 }}>
+            <Txt variant="productTitle">{access.status === 'install-required' ? 'Install Health Connect' : `Count miles from ${HEALTH_NAME}`}</Txt>
+            <Txt variant="bodySmall" c={colors.inkMuted}>
+              {error ?? (!connected && readAt != null
+                ? 'Allow workouts and distance to refresh. Your saved miles are unchanged.'
+                : 'Brooks adds up your recorded runs since each start date. The data stays on this phone.')}
+            </Txt>
+          </View>
+          <BrooksIcon name="caretRight" size={14} color={colors.ink} />
+        </Press>
+      ) : (
+        <Txt variant="bodySmall" c={colors.inkMuted} style={styles.note}>
+          From your {HEALTH_NAME} workouts, read {sinceLabel(readAt)}. Pull down to read again.
+        </Txt>
+      )}
+      {IS_HEALTH_CONNECT ? (
+        <View style={{ paddingHorizontal: spacing.gutter, marginTop: spacing.sm }}>
+          <Txt variant="bodySmall" c={colors.inkMuted}>
+            {access.background ? 'Miles also refresh in the background when Android schedules it.' : 'Miles refresh when you open Brooks. Allow background access for updates while it is closed.'}
+          </Txt>
+          <Press accessibilityRole="button" onPress={openHealthSettings} style={{ paddingVertical: spacing.sm }}>
+            <Txt variant="bodySmall" style={styles.underline}>Manage Health Connect access</Txt>
+          </Press>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -272,9 +286,11 @@ function RetiredRow({ shoe, miles }: { shoe: OwnedShoe; miles: Parameters<typeof
   );
 }
 
-/** No pairs yet: what the tab does, and its two ways in. */
+/** No pairs yet: what the screen does, and its two ways in. */
 function Empty() {
-  const top = useScreenTopPadding();
+  const { access } = useHealthAccess();
+  const HEALTH = access.status !== 'unavailable';
+  const headerHeight = useHeaderHeight();
   const overlap = useTabBarOverlap();
   const focused = useIsFocused();
   return (
@@ -283,9 +299,10 @@ function Empty() {
       contentInset={{ bottom: 0 }}
       contentContainerStyle={[styles.emptyScreen, { paddingBottom: spacing.xl + overlap }]}
     >
-      {/* The navy panel runs under the status bar. */}
+      <Stack.Screen options={{ headerTintColor: colors.surface }} />
+      {/* The navy panel runs under the status bar and native back chevron. */}
       {focused && <StatusBar style="light" animated />}
-      <View style={[styles.hero, { paddingTop: top + spacing.xl }]}>
+      <View style={[styles.hero, { paddingTop: headerHeight + spacing.xl }]}>
         <Txt variant="eyebrow" c={colors.lime}>
           Your shoes
         </Txt>
@@ -294,14 +311,14 @@ function Empty() {
         </Txt>
         <Txt variant="body" c="rgba(255,255,255,0.8)" style={{ marginTop: spacing.md }}>
           {HEALTH
-            ? 'Add the pair you run in. Brooks adds up your Apple Health runs since you started wearing them, and tells you when it is time for a new pair.'
+            ? `Add the pair you run in. Brooks adds up your ${HEALTH_NAME} runs since you started wearing them, and tells you when it is time for a new pair.`
             : 'Add the pair you run in, with the miles it has, and see how much life it has left.'}
         </Txt>
       </View>
 
       <View style={styles.steps}>
         <Step n="1" title="Add a pair" body="Pick it from the catalog, or type its name. Tell us when you started running in it." />
-        <Step n="2" title={HEALTH ? 'Run as usual' : 'Keep running'} body={HEALTH ? 'Every run you log in Apple Health counts toward its miles.' : 'Its miles show against the limit you set.'} />
+        <Step n="2" title={HEALTH ? 'Run as usual' : 'Keep running'} body={HEALTH ? `Runs your recording app shares with ${HEALTH_NAME} count toward its miles.` : 'Its miles show against the limit you set.'} />
         <Step n="3" title="Replace it at 70%" body="Then the Shoe Finder suggests the next pair, starting from what you run in now." />
       </View>
 

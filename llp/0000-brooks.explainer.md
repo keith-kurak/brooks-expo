@@ -94,8 +94,8 @@ including:
 - the home experience, led by the current Josh Kerr / Project 222 feature;
 - Men's and Women's shopping sections;
 - New Arrivals;
-- the Shoe Finder (since 2026-10-06 pushed from the Shoes tab, which also
-  tracks the miles on the runner's own shoes; see
+- the Shoe Finder (pushed from Browse, Profile, or Your shoes, which since
+  2026-10-13 opens from Profile and tracks the runner's pairs; see
   [LLP 0006](./0006-shoe-mileage.design.md));
 - product browsing and product details needed to buy shoes;
 - login; and

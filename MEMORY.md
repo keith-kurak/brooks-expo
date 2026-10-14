@@ -102,3 +102,23 @@ checks cannot prove a background wake. Keep foreground catch-up. See LLP
 [observed] This task installed dependencies and generated `ios/` using
 `bunx expo prebuild --platform ios --no-install`. Widget registration, custom
 extension fonts and the Health purpose string require a native rebuild.
+
+### Android health integration, 2026-10-13
+
+[observed] `BrooksActivity` now includes Android Health Connect 1.1.0. The
+activity config plugin sets Android min SDK 26; Health Connect needs API 28.
+Android 14+ requests use Expo PermissionsService. Android 9–13 uses the
+Health Connect activity contract. A declined runtime request did not return
+through Expo's activity-result adapter; do not revert that split.
+
+[observed] Health Connect's public settings action works on API 36. Direct
+`MANAGE_HEALTH_PERMISSIONS` required a privileged permission. History and
+background grants are checked separately; without history, Finder uses 28
+safe days and mileage preserves its cache if the full shoe window is unreadable.
+See LLP 0005#android and the Android Health Connect implementation diary.
+
+[observed] The Android SDK is at `/Users/nate/Library/Android/sdk`; generated
+`android/local.properties` needs its `sdk.dir`. The `Brooks_Health_API_36` AVD
+uses the installed Play Store arm64 image. Verify with `list-devices` before
+booting. Local checks: `bun run test:health-sync`, `bun run typecheck`, and
+`cd android && ./gradlew :brooks-activity:testDebugUnitTest :app:assembleDebug`.

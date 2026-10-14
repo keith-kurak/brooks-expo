@@ -245,7 +245,7 @@ export function Home() {
  * Nothing at all until a pair crosses the replace line, so Home stays the
  * Paper port for everyone else.
  *
- * @ref LLP 0006#the-shoes-tab — The Shoes tab holds the pairs; Home only
+ * @ref LLP 0006#shoes-opens-from-profile — Profile holds the pairs; Home only
  * says when one of them needs attention.
  */
 function ReplaceNudge() {
@@ -260,7 +260,7 @@ function ReplaceNudge() {
       style={styles.nudge}
       accessibilityRole="button"
       accessibilityLabel={`Your ${shoe.name}: ${m.status} Open your shoes.`}
-      onPress={() => router.navigate('/(tabs)/(shoes)/shoes')}
+      onPress={() => router.navigate('/(tabs)/(account)/shoes')}
     >
       <View style={styles.nudgeTick} />
       <View style={{ flex: 1 }}>

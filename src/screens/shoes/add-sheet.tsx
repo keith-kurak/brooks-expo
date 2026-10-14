@@ -13,7 +13,6 @@ import { Txt } from '@/components/themed-text';
 import { GENDER_LABEL } from '@/data/labels';
 import {
   DEFAULT_LIMIT,
-  isMileageAvailable,
   LIMIT_CHOICES,
   startOfDay,
 } from '@/data/mileage';
@@ -26,8 +25,8 @@ import { border, colors, font, headerIcon, nativeSheetHeader, spacing } from '@/
 import type { WorkoutKind } from '../../../modules/brooks-activity/src/BrooksActivity.types';
 import { SHOES } from './replacement';
 import { StartDateField } from './start-date';
+import { HEALTH_NAME, useHealthAccess } from '@/utils/health';
 
-const HEALTH = isMileageAvailable();
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const COUNTS: { label: string; kinds: WorkoutKind[] }[] = [
@@ -46,6 +45,8 @@ const COUNTS: { label: string; kinds: WorkoutKind[] }[] = [
  */
 export function AddShoeSheet({ productId, colorCode }: { productId?: string; colorCode?: string }) {
   const insets = useSafeAreaInsets();
+  const { access } = useHealthAccess();
+  const HEALTH = access.status !== 'unavailable';
   const [product, setProduct] = useState<Product | null>(() => (productId ? byId(catalog, productId) ?? null : null));
   const [query, setQuery] = useState('');
   const [customName, setCustomName] = useState<string | null>(null);
@@ -196,7 +197,7 @@ export function AddShoeSheet({ productId, colorCode }: { productId?: string; col
           />
           <Txt variant="tiny" c={colors.inkMuted} style={{ marginTop: spacing.sm }}>
             {HEALTH
-              ? 'Only miles from before the start date, or from runs Apple Health did not record.'
+              ? `Only miles from before the start date, or from runs ${HEALTH_NAME} did not record.`
               : 'Every mile on them so far. Update the pair as you go.'}
           </Txt>
 
@@ -212,7 +213,7 @@ export function AddShoeSheet({ productId, colorCode }: { productId?: string; col
 
           {HEALTH ? (
             <>
-              <Label>Count from Apple Health</Label>
+              <Label>{`Count from ${HEALTH_NAME}`}</Label>
               <View style={styles.chips}>
                 {COUNTS.map((c) => (
                   <Chip

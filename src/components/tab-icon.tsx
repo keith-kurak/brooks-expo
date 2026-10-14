@@ -8,7 +8,7 @@ import { border, colors, radius } from '@/theme';
 /**
  * Icons for the app-owned bottom tab bar.
  *
- * @ref LLP 0003#icons-and-the-logo — Three of the five tabs are real sprite
+ * @ref LLP 0003#icons-and-the-logo — Three of the four tabs are real sprite
  * glyphs lifted verbatim from brooksrunning.com: `#icon-search` (Browse),
  * `#icon-cart` (Cart), `#icon-account` (Profile). The sprite has no home, no
  * shoe, and no storefront glyph — a website needs none of them — so Home and

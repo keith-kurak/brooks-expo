@@ -56,6 +56,22 @@ test('launch never prompts; explicit join requests once and repeated reads share
   expect(requestAccess).toHaveBeenCalledTimes(1);
 });
 
+test('an available Android health module does not enroll or read for the HealthKit-only challenge', async () => {
+  const originalPlatform = process.env.EXPO_OS;
+  process.env.EXPO_OS = 'android';
+  try {
+    expect(challenges.isChallengeHealthAvailable()).toBe(false);
+    expect(await challenges.joinWeeklyChallenge()).toBe(false);
+    expect(await challenges.refreshChallenges()).toBe(true);
+    expect(challenges.getChallengesState().enrolled).toBe(false);
+    expect(requestAccess).not.toHaveBeenCalled();
+    expect(getWorkouts).not.toHaveBeenCalled();
+  } finally {
+    if (originalPlatform === undefined) delete process.env.EXPO_OS;
+    else process.env.EXPO_OS = originalPlatform;
+  }
+});
+
 test('completed and deleted workouts update the widget; failed reads retain the cache and recover', async () => {
   await challenges.joinWeeklyChallenge();
   workouts.push({ ...workouts[0], id: 'b', distanceMeters: 2200 });

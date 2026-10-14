@@ -388,6 +388,10 @@ layout and tokens; totals come from eligible workouts. First-time access uses
 a native form sheet and the system Health prompt;
 an existing request is reused. Guests can browse and use the existing login flow.
 
+[observed — main integration, 2026-10-13] The route uses the renamed
+`(index,shop,cart,account)` array group. The four-tab navigation and Profile's
+Your shoes and Health data links are preserved alongside Challenges.
+
 [observed] `src/features/challenges/model.ts` uses local Monday–Sunday calendar
 weeks. Running workouts need finite, positive recorded distance; earlier runs
 before enrollment count. Native HealthKit UUIDs deduplicate a query, with a
@@ -410,8 +414,11 @@ See LLP 0005#healthkit-hides-read-denials.
 [observed] Shoe mileage and an enrolled challenge share the existing Expo
 BackgroundTask registration, `brooks.shoe-mileage`, and its 60-minute minimum
 interval. A challenge can keep the job registered without owned shoes. Both
-readers retain their own aggregate and report failures. Background paths never
-prompt. The OS controls scheduling; the minimum interval is not a guarantee.
+readers retain their own aggregate and report failures. Shoe reads retain
+main's explicit Android permissions, readable-history and background checks.
+Retired pairs do not trigger worker reads while an iOS challenge remains active.
+Background paths never prompt. The OS controls scheduling; the minimum interval
+is not a guarantee.
 
 [observed] The iOS `WeeklyChallenge` widget supports `systemMedium` in the
 existing App Group. It shows the same aggregate and opens the qualified Profile
@@ -421,11 +428,16 @@ are not repeatedly published. Paper badge PNGs are copied into the App Group;
 `plugins/with-challenge-widget-fonts.js` adds Filson resources to the extension.
 The platform draws the progress track, outer mask and content margins.
 
-[observed] Health reads and native widgets remain iOS only. Android/web show
+[observed] Challenge Health reads and native widgets remain iOS only. Android/web show
 the goal and availability copy without fabricated progress. The widget, native
 UUID, fonts and purpose string require a native rebuild. The App Clip excludes
 these routes. Workout records remain transient; weekly aggregates stay on the
 device and in shared widget storage.
+
+[observed — main integration, 2026-10-13] The challenge explicitly excludes
+Android even though the shared native Health module now supports Health Connect.
+Android shoe mileage, Finder and Profile Health data retain that support. See
+[LLP 0005](./0005-activity-informed-finder.design.md#android).
 
 [observed] The prize offer, Tuesday drawing and one-entry mechanic remain a
 proposed promotion. Prize details and enrollment rules identify the demo;
@@ -439,3 +451,9 @@ Fixtures were removed afterward. The widget's timeline, shared badge files,
 extension fonts and app deep link were verified. Springboard exposed no widget
 picker controls, so actual widget placement and tapping remain unverified.
 See the [implementation diary](../diaries/2026-10-13-expo-weekly-challenges.md).
+
+[observed — main integration, 2026-10-13] All 37 challenge, Health-sync,
+Health-summary and filter tests passed, along with TypeScript and
+iOS/Android/web exports. Router checks and native iOS navigation verified
+Profile's anchor and all three destinations after the array-group rename.
+See the [merge diary](../diaries/2026-10-13-expo-challenges-merge.md).

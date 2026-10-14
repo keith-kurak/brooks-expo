@@ -1,4 +1,4 @@
-# LLP 0006: Shoe Mileage and the Shoes Tab
+# LLP 0006: Shoe Mileage and Your Shoes
 
 **Type:** Design
 **Status:** Draft
@@ -16,10 +16,15 @@ Health workouts since the start date. It shows the result as "70% done,
 time to replace." A home screen and Lock Screen widget shows the same number.
 The app sends the number to the widget through an App Group.
 
-The Shoe Finder was a tab of its own. That tab is now **Shoes**: the pairs
-the runner owns, their miles, and the Finder as the way to the next pair.
+[confirmed — user, 2026-10-13] **Your shoes** opens from Profile instead of
+having its own tab. It shows the pairs the runner owns, their miles, and the
+Finder as the way to the next pair.
 
 ## The Shoes tab
+
+[Superseded 2026-10-13 — navigation only] The dedicated Shoes tab described
+below has been removed. The screen content and mileage behavior remain; see
+[Shoes opens from Profile](#shoes-opens-from-profile).
 
 [confirmed — user, 2026-10-06] The user asked for the Finder to be "a core
 part of the app". [inferred] A quiz is something a shopper takes about once
@@ -58,6 +63,27 @@ Home shows one ink strip under the hero, only while a pair is at 70% or more:
 "Your Ghost 16. 72% done, time to replace." It opens the Shoes tab. Without a
 worn pair, Home is unchanged.
 
+## Shoes opens from Profile
+
+[confirmed — user, 2026-10-13] Remove the Shoes tab button and reach the
+screen through Profile.
+
+[observed — implementation, 2026-10-13] Both tab bars now have Home, Browse,
+Cart and Profile. The shared array group is
+`src/app/(tabs)/(index,shop,cart,account)/`; it has no Shoes clone or anchor.
+The guest and member Profile screens share a **Your shoes** row, which pushes
+`/(tabs)/(account)/shoes` above the account anchor. The screen wears the
+native transparent header with a back chevron. Its empty navy panel uses a
+white chevron and light status bar; saved pairs use ink and a dark status bar.
+Both layouts pad below `useHeaderHeight()` so content clears the back button.
+
+[observed] The Finder opens at `/(tabs)/(account)/finder`, preserving the
+replacement parameter. Back from the Finder returns to the shoes, and Back
+from the shoes returns to Profile. The Home replacement reminder and newly
+published widget links use the same Profile destination. Explicit group names
+keep these links from choosing Home's clone of the shared screen. Profile's
+anchor provides the back destination for a direct link.
+
 ## The owned-shoes store
 
 `src/store/shoes.ts` follows `store/member.ts`: synchronous `kv-storage` and
@@ -95,8 +121,10 @@ oldest start date (at most three years) and filters by `start` in TypeScript.
 
 [observed 2026-10-13] Both scheduled and foreground reads use `readShoeMiles`
 and the same TypeScript calculations. Swift only reads Health summaries.
-Android and web still have no Health reader. Steps remain a Finder input,
-not shoe wear.
+[observed 2026-10-13] Android now reads Health Connect through the same
+module contract. Web and Expo Go retain manual mileage. Limited history,
+missing distance and revoked grants preserve cached totals; see
+LLP 0005#android. Steps remain a Finder input, not shoe wear.
 
 [inferred] It is not the all-day `distanceWalkingRunning` sum. That sum counts
 every step a phone or watch records, in whatever shoes. A pair's wear comes
@@ -198,10 +226,13 @@ iOS only, and it is not in Expo Go.
   function runs in its own runtime and can reference nothing outside its
   body: no theme, no helpers, no Filson Pro. The colors are restated in it as
   hex values.
-- A tap opens `ecomdemo:///(tabs)/(shoes)/shoes`. [observed 2026-10-06] The
+- [observed 2026-10-13] A tap opens `ecomdemo:///(tabs)/(account)/shoes`, on
+  Profile's stack. [Superseded 2026-10-13] It previously opened
+  `ecomdemo:///(tabs)/(shoes)/shoes`. [observed 2026-10-06] The
   first version used `ecomdemo://shoes`. That matched the first clone of the
   array group, `(index)/shoes`, so the tap pushed the Shoes screen onto Home's
-  stack with a back button. Naming the groups opens the Shoes tab itself.
+  stack with a back button. Naming the groups selected the Shoes tab itself;
+  it now selects Profile, as described above.
 - On Android and web, `shoe-mileage.tsx` is an empty function. In Expo Go, the
   iOS file finds no `ExpoWidgets` native module and does nothing.
 
@@ -268,7 +299,9 @@ There is one mileage calculation and no custom native timeline writer.
 [observed] Scheduling requests a 60-minute minimum interval. Registration is
 serialized and checks current state: Health's sheet must already have been
 answered, at least one pair must be active, and TaskManager/BackgroundTask
-must be available. Retiring or removing the last active pair unregisters the
+must be available. [observed 2026-10-13] Android additionally checks explicit
+exercise, distance and background-read grants, plus sufficient history, both
+at registration and in the worker. Revoking them unregisters the job while preserving mileage. Retiring or removing the last active pair unregisters the
 job. App Clips exclude both packages from native autolinking and skip their
 JavaScript imports. Missing native modules and unsupported platforms retain
 foreground-only behavior.
@@ -303,10 +336,13 @@ survive failed reads and catch up on a subsequent task or foreground refresh.
 
 ### Native widget publishing
 
-[observed 2026-10-13 — challenge implementation] The scheduled task also serves
-the weekly Run Club challenge. It remains registered while there is an active
-shoe or a current enrolled challenge, after the Health request has been answered.
-Both readers run from the same task and retain their own cached aggregates. See
+[observed 2026-10-13 — challenge implementation and main integration] The
+scheduled task also serves the weekly Run Club challenge on iOS. It remains
+registered while permitted shoe reads or a current iOS challenge need it.
+Android retains the exercise, distance, background and history checks above.
+The worker passes `background: true` to shoe reads and skips them without active
+pairs, while independently refreshing an enrolled challenge. Both readers retain
+their own cached aggregates. See
 [LLP 0008](./0008-us-run-club-promotions.research.md#weekly-challenge-implementation).
 The existing shoe widget design and App Group remain unchanged.
 
@@ -327,7 +363,9 @@ record remains in `diaries/2026-10-13-expo-background-health-sync.md`.
    run in these?" sits under the PDP's details and reviews.
 2. **Start date.** The system compact date picker on iOS (`@expo/ui`
    `DatePicker`, no future dates). Presets ("2 weeks ago", "1 month ago", …)
-   on Android and web, where the date matters less because Health is not read.
+   on web. [observed 2026-10-13] Android now uses the native Material date
+  picker through `@expo/ui/community/datetime-picker`, because Health Connect
+  counts from the exact date.
 3. **Miles already on them.** Optional.
 4. **Replace at.** 300, 400 or 500 miles. With Health, also which workouts
    count.

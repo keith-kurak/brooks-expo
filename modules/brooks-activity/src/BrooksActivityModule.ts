@@ -1,16 +1,19 @@
 import { type NativeModule, requireOptionalNativeModule } from 'expo';
 
-import type { ActivityWorkout, DailySteps } from './BrooksActivity.types';
+import type { ActivityAccess, ActivityWorkout, DailySteps } from './BrooksActivity.types';
 
 declare class BrooksActivityModule extends NativeModule<{}> {
-  /** False on iPads without Health and on every non-iOS platform. */
+  /** Whether the device's health provider is ready. */
   isAvailable(): boolean;
-  /** True when the system sheet would still appear. */
+  /** Android reports installation and separately observable read grants. */
+  getAvailability?(): ActivityAccess['status'];
+  getAccessAsync?(): Promise<ActivityAccess>;
+  openSettingsAsync?(): Promise<void>;
+  /** iOS has not asked yet, or Android's workout/distance grants are missing. */
   shouldRequestAccessAsync(): Promise<boolean>;
   /**
-   * Shows the system sheet the first time. Resolves once the sheet closes, or
-   * at once if the user has already answered it. It does not report whether
-   * read access was granted: HealthKit keeps that private.
+   * Requests read access after a tap. HealthKit keeps read denials private;
+   * Android reports its granted permissions through getAccessAsync.
    */
   requestAccessAsync(): Promise<void>;
   /** Runs, walks and hikes that started in the last `days` days, newest first. */
@@ -25,8 +28,6 @@ declare class BrooksActivityModule extends NativeModule<{}> {
 }
 
 /**
- * Null where the module is not linked: Android and web today. Callers check
- * for null instead of the platform, so an Android implementation needs no JS
- * change here.
+ * Null in Expo Go and on web. Older iOS binaries omit the Android access API.
  */
 export default requireOptionalNativeModule<BrooksActivityModule>('BrooksActivity');

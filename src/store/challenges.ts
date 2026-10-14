@@ -42,7 +42,9 @@ function snapshot(): ChallengesState {
 let state = snapshot();
 let reading: Promise<boolean> = Promise.resolve(true);
 
-export const isChallengeHealthAvailable = () => !isAppClip && (BrooksActivity?.isAvailable() ?? false);
+// @ref LLP 0008#weekly-challenge-implementation — Health Connect support does not enroll Android in this HealthKit-only demo.
+export const isChallengeHealthAvailable = () => !isAppClip && process.env.EXPO_OS !== 'android' &&
+  (BrooksActivity?.isAvailable() ?? false);
 export const getChallengesState = () => state;
 export const hasEnrolledChallenge = () => {
   const email = owner();
