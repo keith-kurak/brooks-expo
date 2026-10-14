@@ -2,6 +2,8 @@ export type WorkoutKind = 'run' | 'walk' | 'hike';
 
 /** One workout, as the native module reports it. */
 export interface ActivityWorkout {
+  /** HealthKit UUID; optional for compatibility with earlier native builds. */
+  id?: string;
   kind: WorkoutKind;
   /** Milliseconds since the epoch. */
   start: number;

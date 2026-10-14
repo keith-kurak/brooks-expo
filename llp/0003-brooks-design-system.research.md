@@ -605,6 +605,10 @@ follow:
 
 #### The glass bar wears the Brooks glyphs
 
+[observed 2026-10-13] The current navigation has four tabs: Home, Browse,
+Cart and Profile. Their PNGs retain all three resolution variants. The renderer
+now emits only these four glyphs; unused Finder PNGs were removed.
+
 [observed 2026-10-06] [confirmed — human request, 2026-10-06: "ios should be
 custom only", "same as the js tab bar"] The glass bar shows the same five
 glyphs as `BrooksTabBar`, not SF Symbols.
@@ -1556,6 +1560,12 @@ first-hand rather than assumed: the email gate, and the per-question
 results instead, where it changes a decision.
 
 ## Screen patterns
+
+[observed 2026-10-13 — weekly challenge] The approved Paper enrollment action
+uses Brooks blue with a centered uppercase label. `Button` exposes this as
+`brand`, retaining the standard 50 pt face, outline and disabled treatment.
+The PDP's separate `purchase` variant keeps its split, sentence-case label.
+See LLP 0008#weekly-challenge-implementation.
 
 [observed — 2026-08-21] Press-scale, enter/exit, layout transitions, the button
 press-shift, PDP size-grid shake, and the filter-sheet fade stay stripped

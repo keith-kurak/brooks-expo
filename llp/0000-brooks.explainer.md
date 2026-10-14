@@ -9,7 +9,7 @@
 **Author:** Charlie Cheever / Codex
 **Date:** 2026-07-13
 **Revised:** 2026-10-13
-**Related:** LLP 0001, LLP 0002, LLP 0003, LLP 0004, LLP 0005, LLP 0006, LLP 0007, [ccheever/llp](https://github.com/ccheever/llp)
+**Related:** LLP 0001, LLP 0002, LLP 0003, LLP 0004, LLP 0005, LLP 0006, LLP 0007, [LLP 0008](./0008-us-run-club-promotions.research.md), [ccheever/llp](https://github.com/ccheever/llp)
 
 ## Summary
 
@@ -104,6 +104,11 @@ including:
 [observed 2026-10-08] iOS also ships an App Clip: a link on the app's
 domain opens New Arrivals, the PDP and the bag with no install, and the bag
 moves into the full app. See [LLP 0007](./0007-app-clip.design.md).
+
+[observed 2026-10-13] Profile now opens a weekly running challenge, with
+on-device Apple Health progress and an iOS home screen widget. The prize offer
+and entries are an explicitly labeled demo promotion. See
+[LLP 0008](./0008-us-run-club-promotions.research.md#weekly-challenge-implementation).
 
 [confirmed — Charlie Cheever, 2026-07-13] Non-commerce footer and corporate
 content such as “Our Purpose” may be deferred. The priority is a convincing,

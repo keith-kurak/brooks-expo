@@ -29,6 +29,7 @@ import { catalog } from '../data/catalog';
 import { brooksImage, heroImage } from '../data/images';
 import { byId, colorwayOf } from '../data/query';
 import { shoeImageFile, updateShoeMileageWidget } from '../widgets/shoe-mileage';
+import { hasEnrolledChallenge, isChallengeHealthAvailable, refreshChallenges, subscribeChallenges } from './challenges';
 
 const SHOES_KEY = 'brooks.shoes.v1';
 const MILES_KEY = 'brooks.shoes.miles.v1';
@@ -131,16 +132,18 @@ export function removeShoe(id: string) {
 let reading: Promise<boolean> = Promise.resolve(true);
 let registering: Promise<void> = Promise.resolve();
 
-/** Keep one scheduled job only while Health has been requested and a pair is active. */
+/** Keep one job while Health access permits reads and shoes or a weekly challenge need it. */
 export function reconcileBackgroundSync(): Promise<void> {
   registering = registering.then(async () => {
     if (!background || !(await background.tasks.isAvailableAsync())) return;
     const [registered, access] = await Promise.all([
       background.tasks.isTaskRegisteredAsync(HEALTH_SYNC_TASK), getActivityAccess(),
     ]);
-    const shouldRun = activeShoes(state).length > 0 && access.status === 'available' &&
-      access.workouts && access.distance && access.background &&
+    const shoesNeedSync = activeShoes(state).length > 0 &&
       (access.maxReadDays == null || mileageReadDays(state.shoes) <= access.maxReadDays);
+    const challengeNeedsSync = isChallengeHealthAvailable() && hasEnrolledChallenge();
+    const shouldRun = access.status === 'available' && access.workouts && access.distance &&
+      access.background && (shoesNeedSync || challengeNeedsSync);
     if (!shouldRun) {
       if (registered) await background.scheduler.unregisterTaskAsync(HEALTH_SYNC_TASK);
     } else if (!registered && await background.scheduler.getStatusAsync() === background.scheduler.BackgroundTaskStatus.Available) {
@@ -257,11 +260,17 @@ function widgetPhoto(shoe: OwnedShoe): string | null {
 /** The app pushes the stored state once at launch, so a reinstall or an update repaints the widget. */
 publishWidget();
 
+// @ref LLP 0008#weekly-challenge-implementation — One scheduler job serves shoes and enrolled challenges.
+subscribeChallenges(() => { void reconcileBackgroundSync(); });
+
 // Imported by index.ts before Expo Router, so a headless launch defines the
 // task without mounting a screen. @ref LLP 0006#background-health-sync
 background?.tasks.defineTask(HEALTH_SYNC_TASK, async ({ error }) => {
   const { BackgroundTaskResult } = background.scheduler;
   if (error) return BackgroundTaskResult.Failed;
-  if (!activeShoes(state).length) return BackgroundTaskResult.Success;
-  return await refreshMileage({ background: true }) ? BackgroundTaskResult.Success : BackgroundTaskResult.Failed;
+  const results = await Promise.all([
+    activeShoes(state).length > 0 ? refreshMileage({ background: true }) : true,
+    refreshChallenges(),
+  ]);
+  return results.every(Boolean) ? BackgroundTaskResult.Success : BackgroundTaskResult.Failed;
 });

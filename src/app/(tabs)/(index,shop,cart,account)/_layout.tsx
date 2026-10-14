@@ -50,7 +50,8 @@ export default function TabStackLayout({ segment }: { segment: string }) {
             headerTransparent: true,
           }}
         >
-          <Stack.Screen name={screenName} options={{ headerShown: false }} />
+          <Stack.Screen name={screenName} options={{ headerShown: false, title: screenName === 'account' ? 'Profile' : undefined }} />
+          <Stack.Screen name="challenges" options={{ title: 'Challenges', headerShown: true }} />
           {/* @ref LLP 0006#shoes-opens-from-profile — a pushed screen with
               the native back chevron, above Profile's account anchor. */}
           <Stack.Screen

@@ -1,5 +1,5 @@
 /**
- * Renders the app-drawn tab bar's five glyphs to PNGs for the Liquid Glass bar.
+ * Renders the app-drawn tab bar's four glyphs to PNGs for the Liquid Glass bar.
  *
  * @ref LLP 0003#the-glass-bar-wears-the-brooks-glyphs — `NativeTabs` cannot
  * draw react-native-svg, only SF Symbols, asset-catalog images, or image
@@ -66,10 +66,6 @@ function drawn(d) {
 const TABS = {
   home: drawn('M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5'),
   browse: sprite('search', 21, 0),
-  finder:
-    drawn(
-      'M2.5 18.5V4.59c0-.91 .5-1.69 1.2-1.69h2.1c.6 0 1 .52 1.2 1.17 .8 2.08 2.9 2.6 4.2 1.04l.6-.78 3.6 4.29c.5 .65 1.2 1.04 1.9 1.3 2.5 .78 4.2 3.12 4.2 5.98V18.5H2.5Z'
-    ) + drawn('M2.5 13.56h18'),
   cart: sprite('cart', 20, 0.9),
   account: sprite('account', 20, 0.65),
 };

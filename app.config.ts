@@ -32,6 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     ...(config.plugins ?? []),
+    'expo-asset',
     // Scheduled Health reads. @ref LLP 0006#background-health-sync
     'expo-background-task',
     // HealthKit entitlement and usage strings. @ref LLP 0005#read-only-by-default
@@ -44,6 +45,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         groupIdentifier: appGroup,
         widgets: [
+          {
+            name: 'WeeklyChallenge',
+            displayName: 'Weekly 5K',
+            description: 'Your weekly running goal, progress and earned challenge badge.',
+            ios: { supportedFamilies: ['systemMedium'] },
+          },
           {
             name: 'ShoeMileage',
             displayName: 'Shoe Mileage',
@@ -67,5 +74,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // The widget and the Clip take the app's build number at build time.
     // @ref LLP 0007#build-numbers
     './plugins/with-target-versions.js',
+    './plugins/with-challenge-widget-fonts.js',
   ],
 });

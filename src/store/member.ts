@@ -57,15 +57,19 @@ export function leave() {
   emit();
 }
 
+export function getMember(): Member | null {
+  return current;
+}
+
+export function subscribeMember(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
+
 export function useMember(): Member | null {
   return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => {
-        listeners.delete(cb);
-      };
-    },
-    () => current,
-    () => current
+    subscribeMember,
+    getMember,
+    getMember
   );
 }

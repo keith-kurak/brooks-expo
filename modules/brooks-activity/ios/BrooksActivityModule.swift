@@ -218,6 +218,8 @@ private let WORKOUT_KINDS: [HKWorkoutActivityType: String] = [
 ]
 
 struct WorkoutRecord: Record {
+  // @ref LLP 0008#weekly-challenge-implementation — Stable identity prevents counting a workout twice.
+  @Field var id: String = ""
   /// "run", "walk" or "hike".
   @Field var kind: String = ""
   /// Milliseconds since the epoch, so JS can hand it straight to `new Date()`.
@@ -231,6 +233,7 @@ struct WorkoutRecord: Record {
   init() {}
 
   init(_ workout: HKWorkout) {
+    id = workout.uuid.uuidString
     kind = WORKOUT_KINDS[workout.workoutActivityType] ?? "other"
     start = workout.startDate.timeIntervalSince1970 * 1000
     durationMinutes = workout.duration / 60

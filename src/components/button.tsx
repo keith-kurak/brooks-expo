@@ -51,7 +51,7 @@ export function Button({
 }: {
   title: string;
   onPress?: () => void;
-  variant?: 'primary' | 'secondary' | 'onDark' | 'purchase';
+  variant?: 'primary' | 'secondary' | 'onDark' | 'purchase' | 'brand';
   disabled?: boolean;
   loading?: boolean;
   style?: ViewProps['style'];
@@ -60,14 +60,14 @@ export function Button({
   testID?: string;
 }) {
   const isPurchase = variant === 'purchase';
-  const isFilled = variant === 'primary' || isPurchase;
+  const isFilled = variant === 'primary' || variant === 'brand' || isPurchase;
   // Disabled is one pairing for every in-sheet button: `surfaceAlt` under the
   // site's secondary gray, 4.7:1. `surfaceSunken` is the better-named token but
   // lands at 4.4:1 with that same gray, and the gray is the brand value, so the
   // fill is what gives. The purchase CTA keeps its own darker treatment below.
   const bg =
     disabled ? (isPurchase ? colors.inkMuted : colors.surfaceAlt)
-    : isPurchase ? colors.blue
+    : isPurchase || variant === 'brand' ? colors.blue
     : variant === 'primary' ? colors.ink
     : variant === 'onDark' ? colors.surface
     : colors.surface;

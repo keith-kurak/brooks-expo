@@ -227,6 +227,7 @@ function SettingsRows() {
   const update = useUpdateCheck();
   return (
     <>
+      <Row label="Challenges" detail="Weekly running goals and rewards" onPress={() => router.push('/(tabs)/(account)/challenges')} />
       <Row label="Your shoes" detail="Miles on the pairs you own" onPress={() => router.push('/(tabs)/(account)/shoes')} />
       <Row label="Health data" detail="Workouts and steps" onPress={() => router.push('/(tabs)/(account)/health-data')} />
       <Row label="Shoe Finder" detail="Find your perfect shoe" onPress={() => router.push('/(tabs)/(account)/finder')} />
