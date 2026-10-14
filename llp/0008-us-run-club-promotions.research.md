@@ -212,6 +212,11 @@ new proposals and should be labeled as such.
 
 ## Paper concept study
 
+[superseded — PNG export locations, 2026-10-13] The static PNG exports
+referenced below were removed during asset cleanup. The linked directories now
+contain notes and links to the editable Paper designs. The two widget badge PNGs
+in `assets/challenges/` remain runtime assets.
+
 [confirmed — user request, 2026-10-13] Generate designs in Paper, use Mobbin
 for inspiration, and show the results.
 

@@ -605,6 +605,10 @@ follow:
 
 #### The glass bar wears the Brooks glyphs
 
+[observed 2026-10-13] The current navigation has four tabs: Home, Browse,
+Cart and Profile. Their PNGs retain all three resolution variants. The renderer
+now emits only these four glyphs; unused Finder PNGs were removed.
+
 [observed 2026-10-06] [confirmed — human request, 2026-10-06: "ios should be
 custom only", "same as the js tab bar"] The glass bar shows the same five
 glyphs as `BrooksTabBar`, not SF Symbols.
