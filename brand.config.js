@@ -28,8 +28,8 @@
 /** @type {Brand} */
 const brand = {
   name: 'Ecommerce Demo',
-  bundleIdentifier: 'com.exponathan.ecommercedemo',
-  androidPackage: 'com.exponathan.ecommercedemo',
+  bundleIdentifier: 'com.keithkurak.ecommercedemo',
+  androidPackage: 'com.keithkurak.ecommercedemo',
   scheme: 'ecomdemo',
   slug: 'ecommerce-demo',
   appleTeamId: 'PH3XBLZS8A',

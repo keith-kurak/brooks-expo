@@ -174,6 +174,10 @@ eas workflow:run .eas/workflows/deploy.yml -F force_native=true
 
 The workflow also declares a push trigger for `main`. That trigger remains inactive until this GitHub repository is connected to the EAS project.
 
+## TestFlight feedback to pull request
+
+A TestFlight screenshot or crash report starts an agent pipeline. It files a GitHub issue, reproduces the report on an EAS cloud simulator, opens a fix PR, reviews it, and checks the fix on a second simulator. The evidence for each step goes on the issue or the PR. Comment `@expo-bot` on an issue or a PR to run it by hand. The workflows are in `.eas/workflows/` (`testflight-*.yml`, `expo-bot-*.yml`) and `.github/workflows/expo-bot-bridge.yml`; the scripts and prompts are in `tools/agent/`. [LLP 0009](./llp/0009-testflight-agent-pipeline.design.md) explains the design and lists the setup steps.
+
 ## App Clip
 
 iOS builds include an App Clip (`targets/clip`). A link on `ecommerce-demo.expo.app` opens New Arrivals, a product page, and the bag without installing the app. The bag is stored in the App Group, so it is in the full app when the app opens. See [LLP 0007](./llp/0007-app-clip.design.md).

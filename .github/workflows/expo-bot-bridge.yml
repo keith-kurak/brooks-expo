@@ -1,0 +1,286 @@
+name: Expo bot bridge
+
+# Routes "@expo-bot" comments to the agent workflows. EAS workflows have a
+# pull_request_comment trigger but no issue-comment trigger, so one GitHub
+# Action handles both. See LLP 0009.
+#
+# On a pull request, by mode:
+#   @expo-bot <instruction>          apply the change, then review + verify
+#   @expo-bot change <instruction>   apply the change only (fast, no EAS run)
+#   @expo-bot review [instruction]   review + verify only, no code changes
+# A bare "@expo-bot" (no instruction) runs review mode. Change modes run a
+# Claude Code agent here in the Action, commit to the PR branch, and push.
+# Review/verify dispatches the expo-bot-verify EAS workflow.
+#
+# On an issue (not a PR):
+#   @expo-bot [guidance]             try to replicate the issue on an EAS
+#                                    cloud simulator; if replicated, open a
+#                                    fix PR and verify it, otherwise comment
+#                                    the reasoning. Guidance after @expo-bot
+#                                    (for example missing repro steps) goes
+#                                    to the replication agent.
+#
+# The `if` conditions below are a security gate. This repository is
+# public: without them, anyone who can comment could run agent workflows
+# against it with these credentials. Only the repository owner,
+# organization members, and collaborators can drive the bot. Do not remove
+# them. @ref LLP 0009#security
+#
+# Required repository secrets:
+#   EXPO_TOKEN                Expo access token that can run EAS workflows
+#   CLAUDE_CODE_OAUTH_TOKEN   from `claude setup-token`, change modes only
+#                             (ANTHROPIC_API_KEY works as a fallback)
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  # Change modes push commits to the PR branch.
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  route:
+    name: Route the @expo-bot PR comment
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '@expo-bot') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    steps:
+      - name: Acknowledge the comment with an eyes reaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content=eyes >/dev/null || true
+
+      - name: Parse the mode and instruction
+        id: parse
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          # First line only, minus the @expo-bot prefix. A leading
+          # "review" or "change" keyword selects the mode; the default
+          # is change-then-verify ("full"). No instruction -> review.
+          FIRST_LINE=$(printf '%s' "$COMMENT_BODY" | head -n 1 | sed -E 's/^@expo-bot[[:space:]]*//' | sed -E 's/[[:space:]]+$//')
+          MODE=full
+          INSTRUCTION="$FIRST_LINE"
+          case "$FIRST_LINE" in
+            review) MODE=review; INSTRUCTION="" ;;
+            review\ *) MODE=review; INSTRUCTION="${FIRST_LINE#review }" ;;
+            change) MODE=change; INSTRUCTION="" ;;
+            change\ *) MODE=change; INSTRUCTION="${FIRST_LINE#change }" ;;
+          esac
+          INSTRUCTION=$(printf '%s' "$INSTRUCTION" | sed -E 's/^[[:space:]]+//')
+          if [ "$MODE" = "change" ] && [ -z "$INSTRUCTION" ]; then
+            echo "change mode needs an instruction after the keyword."
+            exit 1
+          fi
+          if [ "$MODE" = "full" ] && [ -z "$INSTRUCTION" ]; then
+            MODE=review
+          fi
+          echo "Mode: $MODE"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          {
+            echo "instruction<<__EOF__"
+            echo "$INSTRUCTION"
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Look up the PR head (fork guard)
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Both the change agent and the EAS workflow run PR code with
+          # this project's secrets, so refuse PRs from forks outright.
+          PR_JSON=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}")
+          HEAD_REPO=$(echo "$PR_JSON" | jq -r '.head.repo.full_name')
+          HEAD_BRANCH=$(echo "$PR_JSON" | jq -r '.head.ref')
+          STATE=$(echo "$PR_JSON" | jq -r '.state')
+          if [ "$HEAD_REPO" != "${{ github.repository }}" ]; then
+            echo "PR head is fork '$HEAD_REPO'; refusing to run agent workflows on it."
+            exit 1
+          fi
+          if [ "$STATE" != "open" ]; then
+            echo "PR is $STATE; not running the bot on it."
+            exit 1
+          fi
+          echo "branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
+
+      # Check out the PR head branch (not a detached SHA): change modes
+      # push to it, and `eas workflow:run` uploads this checkout, so
+      # every EAS job sees the PR's code, including a change made here.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.pr.outputs.branch }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+
+      # eas-cli reads app.config.ts, which imports expo/config; the change
+      # agent's type check needs node_modules too.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Apply the requested change to the PR branch
+        if: contains(fromJSON('["full","change"]'), steps.parse.outputs.mode)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          INSTRUCTION: ${{ steps.parse.outputs.instruction }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: bash tools/agent/apply-change.sh
+
+      - name: Run the expo-bot-verify workflow on EAS
+        id: verify
+        if: contains(fromJSON('["full","review"]'), steps.parse.outputs.mode)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          INSTRUCTION: ${{ steps.parse.outputs.instruction }}
+        run: |
+          # Without pipefail, `| tee` would hide a failed dispatch and the
+          # step would report success.
+          set -o pipefail
+          OUT=$(npx --yes eas-cli@latest workflow:run .eas/workflows/expo-bot-verify.yml \
+            --input "pr_number=${PR_NUMBER}" \
+            --input "instruction=${INSTRUCTION}" \
+            --non-interactive 2>&1 | tee /dev/stderr)
+          RUN_URL=$(printf '%s' "$OUT" | grep -oE 'https://expo\.dev[^[:space:]]*' | head -n 1 || true)
+          echo "run_url=$RUN_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Report the verification dispatch on the PR
+        # always(): the dispatch outcome decides which comment is posted,
+        # so this must run when the dispatch step failed too.
+        if: always() && contains(fromJSON('["full","review"]'), steps.parse.outputs.mode)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.verify.outcome }}
+          RUN_URL: ${{ steps.verify.outputs.run_url }}
+        run: |
+          # The bodies are built with heredocs so every line stays inside
+          # this YAML block scalar (YAML strips the shared indentation).
+          BODY_FILE=$(mktemp)
+          if [ "$OUTCOME" = "success" ]; then
+            RUN_LINE=""
+            if [ -n "$RUN_URL" ]; then
+              RUN_LINE=" — [follow the run](${RUN_URL})"
+            fi
+            cat > "$BODY_FILE" <<BODY
+          ## 🤖 Agent verification
+
+          **Status:** 🔄 Reviewing the diff and checking this PR's app on an EAS cloud simulator${RUN_LINE}
+
+          _Review, verdict, and evidence land here as they complete. Posted by the expo-bot bridge for @${{ github.event.comment.user.login }}._
+          BODY
+          else
+            cat > "$BODY_FILE" <<BODY
+          ## 🤖 Agent verification
+
+          ⚠️ **Could not start the verification workflow** — see the
+          [bridge Action logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}), then comment \`@expo-bot review\` to retry.
+
+          _Posted by the expo-bot bridge for @${{ github.event.comment.user.login }}._
+          BODY
+          fi
+          gh issue comment "${{ github.event.issue.number }}" --body-file "$BODY_FILE"
+
+  route_issue:
+    name: Route the @expo-bot issue comment
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.issue.pull_request == null &&
+      startsWith(github.event.comment.body, '@expo-bot') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    steps:
+      - name: Acknowledge the comment with an eyes reaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content=eyes >/dev/null || true
+
+      - name: Parse the guidance
+        id: parse
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          # Issues have no modes: everything after @expo-bot on the first
+          # line is guidance for the replication agent (e.g. repro steps).
+          INSTRUCTION=$(printf '%s' "$COMMENT_BODY" | head -n 1 \
+            | sed -E 's/^@expo-bot[[:space:]]*//' | sed -E 's/[[:space:]]+$//')
+          {
+            echo "instruction<<__EOF__"
+            echo "$INSTRUCTION"
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+      # The issue is validated against the default branch, which is also
+      # the base for a fix PR. `eas workflow:run` uploads this checkout,
+      # so every EAS job sees that code.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+
+      # eas-cli reads app.config.ts, which imports expo/config.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run the expo-bot-issue workflow on EAS
+        id: dispatch
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          INSTRUCTION: ${{ steps.parse.outputs.instruction }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          # Without pipefail, `| tee` would hide a failed dispatch and the
+          # step would report success.
+          set -o pipefail
+          OUT=$(npx --yes eas-cli@latest workflow:run .eas/workflows/expo-bot-issue.yml \
+            --input "issue_number=${ISSUE_NUMBER}" \
+            --input "instruction=${INSTRUCTION}" \
+            --input "base_branch=${BASE_BRANCH}" \
+            --input "auto_verify=true" \
+            --non-interactive 2>&1 | tee /dev/stderr)
+          RUN_URL=$(printf '%s' "$OUT" | grep -oE 'https://expo\.dev[^[:space:]]*' | head -n 1 || true)
+          echo "run_url=$RUN_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Acknowledge on the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ steps.dispatch.outputs.run_url }}
+        run: |
+          RUN_LINE=""
+          if [ -n "$RUN_URL" ]; then
+            RUN_LINE=" — [follow the run](${RUN_URL})"
+          fi
+          # Same shape as every bot post, and the same "Agent triage"
+          # heading the expo-bot-issue result comment uses.
+          BODY_FILE=$(mktemp)
+          cat > "$BODY_FILE" <<BODY
+          ## 🤖 Agent triage
+
+          **Status:** 🔄 Replicating the report on an EAS cloud simulator${RUN_LINE}
+
+          _Verdict and evidence land here; if it replicates, a fix PR follows and is verified on a second simulator. Posted by the expo-bot bridge for @${{ github.event.comment.user.login }}._
+          BODY
+          gh issue comment "${{ github.event.issue.number }}" --body-file "$BODY_FILE"

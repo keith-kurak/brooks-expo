@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "brooks-expo",
@@ -42,6 +43,7 @@
       },
       "devDependencies": {
         "@types/react": "~19.2.2",
+        "eas-simulator-evidence": "^0.2.2",
         "typescript": "~6.0.3",
       },
     },
@@ -538,6 +540,8 @@
     "domhandler": ["domhandler@5.0.3", "", { "dependencies": { "domelementtype": "^2.3.0" } }, "sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w=="],
 
     "domutils": ["domutils@3.2.2", "", { "dependencies": { "dom-serializer": "^2.0.0", "domelementtype": "^2.3.0", "domhandler": "^5.0.3" } }, "sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw=="],
+
+    "eas-simulator-evidence": ["eas-simulator-evidence@0.2.2", "", { "bin": { "eas-simulator-evidence": "bin/eas-simulator-evidence.js" } }, "sha512-9pkoRGTMOcojo9QR8TWHxs0tIJX7uXCcZhIikJ5gLwQ/jXqVhro3wu4RauFyQgdhvbOU/TOE9g3WHI6/VffSdw=="],
 
     "eastasianwidth": ["eastasianwidth@0.2.0", "", {}, "sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA=="],
 

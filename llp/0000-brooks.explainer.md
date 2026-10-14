@@ -8,8 +8,8 @@
 **Role:** Root
 **Author:** Charlie Cheever / Codex
 **Date:** 2026-07-13
-**Revised:** 2026-10-13
-**Related:** LLP 0001, LLP 0002, LLP 0003, LLP 0004, LLP 0005, LLP 0006, LLP 0007, [LLP 0008](./0008-us-run-club-promotions.research.md), [ccheever/llp](https://github.com/ccheever/llp)
+**Revised:** 2026-10-14
+**Related:** LLP 0001, LLP 0002, LLP 0003, LLP 0004, LLP 0005, LLP 0006, LLP 0007, [LLP 0008](./0008-us-run-club-promotions.research.md), [LLP 0009](./0009-testflight-agent-pipeline.design.md), [ccheever/llp](https://github.com/ccheever/llp)
 
 ## Summary
 

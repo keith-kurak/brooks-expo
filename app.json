@@ -5,7 +5,7 @@
       "policy": "fingerprint"
     },
     "updates": {
-      "url": "https://u.expo.dev/9510f33f-8ac6-48db-93df-58b6bb4f0583"
+      "url": "https://u.expo.dev/5db41437-f382-47ea-90be-998a34a3336f"
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -51,9 +51,41 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "9510f33f-8ac6-48db-93df-58b6bb4f0583"
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.keithkurak.ecommercedemo.ExpoWidgetsTarget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.keithkurak.ecommercedemo"
+                    ]
+                  }
+                },
+                {
+                  "bundleIdentifier": "com.keithkurak.ecommercedemo.clip",
+                  "targetName": "clip",
+                  "entitlements": {
+                    "com.apple.developer.associated-domains": [
+                      "appclips:ecommerce-demo.expo.app"
+                    ],
+                    "com.apple.security.application-groups": [
+                      "group.com.keithkurak.ecommercedemo"
+                    ],
+                    "com.apple.developer.parent-application-identifiers": [
+                      "$(AppIdentifierPrefix)com.keithkurak.ecommercedemo"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "5db41437-f382-47ea-90be-998a34a3336f"
       }
     },
-    "owner": "exponathan"
+    "owner": "keithco"
   }
 }
