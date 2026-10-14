@@ -13,7 +13,7 @@ const { withEntitlementsPlist, withInfoPlist } = require('expo/config-plugins');
 // @ref LLP 0006#mileage-is-workout-distance — Shoe mileage reads the same
 // workouts, so the string names both uses.
 const SHARE_DESCRIPTION =
-  'Brooks reads your runs, walks, hikes and steps to count the miles on the shoes you add, and to answer some Shoe Finder questions for you. Your data stays on this device.';
+  'Brooks reads your runs, walks, hikes and steps to update your weekly running challenges, count the miles on the shoes you add, and answer some Shoe Finder questions. Your data stays on this device.';
 const UPDATE_DESCRIPTION =
   'Brooks does not save your data to Apple Health. Only development builds add sample workouts, to test the Shoe Finder.';
 

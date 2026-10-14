@@ -1506,6 +1506,12 @@ results instead, where it changes a decision.
 
 ## Screen patterns
 
+[observed 2026-10-13 — weekly challenge] The approved Paper enrollment action
+uses Brooks blue with a centered uppercase label. `Button` exposes this as
+`brand`, retaining the standard 50 pt face, outline and disabled treatment.
+The PDP's separate `purchase` variant keeps its split, sentence-case label.
+See LLP 0008#weekly-challenge-implementation.
+
 [observed — 2026-08-21] Press-scale, enter/exit, layout transitions, the button
 press-shift, PDP size-grid shake, and the filter-sheet fade stay stripped
 pending the motion overhaul. [observed 2026-08-26] The button press-shift is

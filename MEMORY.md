@@ -18,8 +18,8 @@
   Android mismatch guidance are superseded.
 - `bun run test:health-sync` runs Bun tests for Expo task registration, shared
   foreground/background reads, errors, deletions and concurrent shoe changes. TypeScript is checked with `bun run typecheck`;
-  app UI is validated interactively with Argent. Existing visual
-  baselines live under `.baselines/ios` and `.baselines/android`.
+  app UI is validated interactively with Argent. Visual baselines, when present,
+  live under `.baselines/ios` and `.baselines/android`.
 - iOS 27.x simulators crash dev builds at launch (no `UIApplicationSceneManifest`
   in the generated Info.plist). Verify on an iOS 26.5 simulator, which also has
   Liquid Glass.
@@ -30,6 +30,8 @@
   Metro port, open `exp+ecommerce-demo://expo-development-client/?url=http%3A%2F%2Flocalhost%3A<port>`.
 
 ### Environment inspection, 2026-10-12
+
+[Superseded for worktree dependency/native-directory state by the 2026-10-13 inspection below.]
 
 [observed] Argent environment inspector result, with version and identity
 fields retained for subsequent native work:
@@ -75,3 +77,28 @@ minimum interval, not HealthKit observer delivery. `index.ts` defines the task
 before Router loads. Real scheduler execution needs an iPhone; simulator
 checks cannot prove a background wake. Keep foreground catch-up. See LLP
 0006#background-health-sync.
+
+### Environment inspection, 2026-10-13, challenge implementation worktree
+
+[observed] Argent environment inspector snapshot for
+`/Users/nate/.t3/worktrees/brooks-expo/t3-f10e470e` before installation:
+
+```json
+{
+  "is_react_native": true, "is_native_ios": false, "is_native_android": false,
+  "project_type": "Expo SDK 57 / React Native",
+  "supported_platforms": ["ios", "android", "web"],
+  "healthkit_platforms": ["ios"], "widget_platforms": ["ios"],
+  "package_manager": "bun@1.2.22",
+  "versions": { "expo": "~57.0.27", "expo_router": "~57.0.25", "react_native": "0.86.3", "react": "19.2.3", "expo_widgets": "~57.0.23", "expo_ui": "~57.0.22", "node": "22.23.1", "bun": "1.2.22", "cocoapods": "1.16.2" },
+  "commands": { "install": "bun install --frozen-lockfile", "start": "bun run start", "ios": "bun run ios", "android": "bun run android", "web": "bun run web", "typecheck": "bun run typecheck", "test_health_sync": "bun run test:health-sync" },
+  "metro": { "default_port": 8081, "running": false, "excluded_directory": "tools/" },
+  "dependencies": { "node_modules_present": false, "has_ios_dir": false, "has_android_dir": false, "baselines_present": false },
+  "identity": { "ios_bundle_identifier": "com.exponathan.ecommercedemo", "android_package": "com.exponathan.ecommercedemo", "app_group": "group.com.exponathan.ecommercedemo" },
+  "gather_workspace_data": { "status": "succeeded", "required_argument": "workspacePath" }
+}
+```
+
+[observed] This task installed dependencies and generated `ios/` using
+`bunx expo prebuild --platform ios --no-install`. Widget registration, custom
+extension fonts and the Health purpose string require a native rebuild.

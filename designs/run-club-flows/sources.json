@@ -1,0 +1,276 @@
+[
+  {
+    "id": "a2fb70c8-9786-4663-b0af-4c1ff66ff0f5",
+    "name": "Joining a challenge",
+    "actions": [
+      "Registering"
+    ],
+    "mobbin_url": "https://mobbin.com/flows/a2fb70c8-9786-4663-b0af-4c1ff66ff0f5",
+    "app_name": "Nike Run Club",
+    "platform": "ios",
+    "screen_count": 6,
+    "screens": [
+      {
+        "screen_id": "9bc8f365-4408-469a-9e3a-33b16f2ddc8e",
+        "image_url": "https://mobbin.com/api/mcp/short/vlZY3rrP",
+        "position": 1,
+        "mobbin_url": "https://mobbin.com/screens/9bc8f365-4408-469a-9e3a-33b16f2ddc8e",
+        "filename": "01.webp"
+      },
+      {
+        "screen_id": "654f8e6d-5dd8-4679-9a17-eaea7646cf62",
+        "image_url": "https://mobbin.com/api/mcp/short/RqzeIOM6",
+        "position": 2,
+        "mobbin_url": "https://mobbin.com/screens/654f8e6d-5dd8-4679-9a17-eaea7646cf62",
+        "filename": "02.webp"
+      },
+      {
+        "screen_id": "431f3e7e-3c16-4608-9cc4-9878baa4e75a",
+        "image_url": "https://mobbin.com/api/mcp/short/nLMqX68q",
+        "position": 3,
+        "mobbin_url": "https://mobbin.com/screens/431f3e7e-3c16-4608-9cc4-9878baa4e75a",
+        "filename": "03.webp"
+      },
+      {
+        "screen_id": "37f23aed-ca5c-4b7d-b828-4f8f90ef4145",
+        "image_url": "https://mobbin.com/api/mcp/short/2wjr8Ist",
+        "position": 4,
+        "mobbin_url": "https://mobbin.com/screens/37f23aed-ca5c-4b7d-b828-4f8f90ef4145",
+        "filename": "04.webp"
+      },
+      {
+        "screen_id": "4bc7a245-92ea-4fb0-b0d4-6de9e5833adb",
+        "image_url": "https://mobbin.com/api/mcp/short/zTMUAs9Z",
+        "position": 5,
+        "mobbin_url": "https://mobbin.com/screens/4bc7a245-92ea-4fb0-b0d4-6de9e5833adb",
+        "filename": "05.webp"
+      },
+      {
+        "screen_id": "c183d6d0-45f7-495d-8d76-8e1f97e4e8aa",
+        "image_url": "https://mobbin.com/api/mcp/short/pqXSReYr",
+        "position": 6,
+        "mobbin_url": "https://mobbin.com/screens/c183d6d0-45f7-495d-8d76-8e1f97e4e8aa",
+        "filename": "06.webp"
+      }
+    ],
+    "folder": "01-nike-run-club"
+  },
+  {
+    "id": "8dd734fc-b270-4299-9a51-f36e46bd9675",
+    "name": "Joining a challenge",
+    "actions": [
+      "Joining & Accepting"
+    ],
+    "mobbin_url": "https://mobbin.com/flows/8dd734fc-b270-4299-9a51-f36e46bd9675",
+    "app_name": "Strava",
+    "platform": "ios",
+    "screen_count": 4,
+    "screens": [
+      {
+        "screen_id": "637fc8b4-033b-4481-ba04-b8bd986b8a74",
+        "image_url": "https://mobbin.com/api/mcp/short/df1CfGsx",
+        "position": 1,
+        "mobbin_url": "https://mobbin.com/screens/637fc8b4-033b-4481-ba04-b8bd986b8a74",
+        "filename": "01.webp"
+      },
+      {
+        "screen_id": "82f47a35-fe83-4d21-8a7f-449f9b9a99de",
+        "image_url": "https://mobbin.com/api/mcp/short/Mm5tHSw3",
+        "position": 2,
+        "mobbin_url": "https://mobbin.com/screens/82f47a35-fe83-4d21-8a7f-449f9b9a99de",
+        "filename": "02.webp"
+      },
+      {
+        "screen_id": "d8170ca4-9336-435b-946c-f1143e78093e",
+        "image_url": "https://mobbin.com/api/mcp/short/PsV03ENL",
+        "position": 3,
+        "mobbin_url": "https://mobbin.com/screens/d8170ca4-9336-435b-946c-f1143e78093e",
+        "filename": "03.webp"
+      },
+      {
+        "screen_id": "7a7e66b6-d39c-4139-8b29-63049eb95da1",
+        "image_url": "https://mobbin.com/api/mcp/short/CyFmKWy6",
+        "position": 4,
+        "mobbin_url": "https://mobbin.com/screens/7a7e66b6-d39c-4139-8b29-63049eb95da1",
+        "filename": "04.webp"
+      }
+    ],
+    "folder": "02-strava"
+  },
+  {
+    "id": "6e0649bc-6f82-447b-a55e-0290f38d2179",
+    "name": "Joining a challenge",
+    "actions": [
+      "Joining & Accepting"
+    ],
+    "mobbin_url": "https://mobbin.com/flows/6e0649bc-6f82-447b-a55e-0290f38d2179",
+    "app_name": "Peloton",
+    "platform": "ios",
+    "screen_count": 6,
+    "screens": [
+      {
+        "screen_id": "301f5285-2aa7-473b-b26e-1c01370f4d01",
+        "image_url": "https://mobbin.com/api/mcp/short/p8fTqB3z",
+        "position": 1,
+        "mobbin_url": "https://mobbin.com/screens/301f5285-2aa7-473b-b26e-1c01370f4d01",
+        "filename": "01.webp"
+      },
+      {
+        "screen_id": "efe6d1db-40fe-4097-9571-d525cad33656",
+        "image_url": "https://mobbin.com/api/mcp/short/hBWlcuxb",
+        "position": 2,
+        "mobbin_url": "https://mobbin.com/screens/efe6d1db-40fe-4097-9571-d525cad33656",
+        "filename": "02.webp"
+      },
+      {
+        "screen_id": "5a14f4b0-9de7-46e8-b60f-0be90ed4ee8c",
+        "image_url": "https://mobbin.com/api/mcp/short/b4cJ7cdc",
+        "position": 3,
+        "mobbin_url": "https://mobbin.com/screens/5a14f4b0-9de7-46e8-b60f-0be90ed4ee8c",
+        "filename": "03.webp"
+      },
+      {
+        "screen_id": "39583236-9d09-4671-bc3c-3839bb513ca8",
+        "image_url": "https://mobbin.com/api/mcp/short/oXq4oJwe",
+        "position": 4,
+        "mobbin_url": "https://mobbin.com/screens/39583236-9d09-4671-bc3c-3839bb513ca8",
+        "filename": "04.webp"
+      },
+      {
+        "screen_id": "ebd6c4c7-547c-4dd0-ae28-1a7a5baaebc7",
+        "image_url": "https://mobbin.com/api/mcp/short/tuaC7icv",
+        "position": 5,
+        "mobbin_url": "https://mobbin.com/screens/ebd6c4c7-547c-4dd0-ae28-1a7a5baaebc7",
+        "filename": "05.webp"
+      },
+      {
+        "screen_id": "8a0a621e-8674-4280-b92a-8806e2666cd8",
+        "image_url": "https://mobbin.com/api/mcp/short/HUk4aUzV",
+        "position": 6,
+        "mobbin_url": "https://mobbin.com/screens/8a0a621e-8674-4280-b92a-8806e2666cd8",
+        "filename": "06.webp"
+      }
+    ],
+    "folder": "03-peloton"
+  },
+  {
+    "id": "516a339d-30c4-434a-b554-519f79918bcf",
+    "name": "Changing exercise days",
+    "actions": [
+      "Editing & Updating"
+    ],
+    "mobbin_url": "https://mobbin.com/flows/516a339d-30c4-434a-b554-519f79918bcf",
+    "app_name": "Fitbit",
+    "platform": "ios",
+    "screen_count": 4,
+    "screens": [
+      {
+        "screen_id": "2b3ad9ba-d97e-4184-806e-8f5a64c90f3d",
+        "image_url": "https://mobbin.com/api/mcp/short/R7FAvJ1y",
+        "position": 1,
+        "mobbin_url": "https://mobbin.com/screens/2b3ad9ba-d97e-4184-806e-8f5a64c90f3d",
+        "filename": "01.webp"
+      },
+      {
+        "screen_id": "a7e3ee3a-69eb-4a75-85f1-e2ac0eb23745",
+        "image_url": "https://mobbin.com/api/mcp/short/6g4mabO0",
+        "position": 2,
+        "mobbin_url": "https://mobbin.com/screens/a7e3ee3a-69eb-4a75-85f1-e2ac0eb23745",
+        "filename": "02.webp"
+      },
+      {
+        "screen_id": "0d35d5a3-e05f-4e21-866a-06c8d4419858",
+        "image_url": "https://mobbin.com/api/mcp/short/VG7MJ0jD",
+        "position": 3,
+        "mobbin_url": "https://mobbin.com/screens/0d35d5a3-e05f-4e21-866a-06c8d4419858",
+        "filename": "03.webp"
+      },
+      {
+        "screen_id": "cf396310-5f47-49e9-baf6-8c94caa8dafd",
+        "image_url": "https://mobbin.com/api/mcp/short/UjL7fEsv",
+        "position": 4,
+        "mobbin_url": "https://mobbin.com/screens/cf396310-5f47-49e9-baf6-8c94caa8dafd",
+        "filename": "04.webp"
+      }
+    ],
+    "folder": "04-fitbit"
+  },
+  {
+    "id": "c4a04732-7fbc-4bd6-9019-81b04f4eb812",
+    "name": "Collecting berries",
+    "actions": [
+      "Misc"
+    ],
+    "mobbin_url": "https://mobbin.com/flows/c4a04732-7fbc-4bd6-9019-81b04f4eb812",
+    "app_name": "Alan",
+    "platform": "ios",
+    "screen_count": 3,
+    "screens": [
+      {
+        "screen_id": "fc70fe25-5fdc-4ab8-8c99-416546c33a23",
+        "image_url": "https://mobbin.com/api/mcp/short/aHJfFchC",
+        "position": 1,
+        "mobbin_url": "https://mobbin.com/screens/fc70fe25-5fdc-4ab8-8c99-416546c33a23",
+        "filename": "01.webp"
+      },
+      {
+        "screen_id": "ddf15f99-1228-4140-b047-5197814e671d",
+        "image_url": "https://mobbin.com/api/mcp/short/yNtd5oz3",
+        "position": 2,
+        "mobbin_url": "https://mobbin.com/screens/ddf15f99-1228-4140-b047-5197814e671d",
+        "filename": "02.webp"
+      },
+      {
+        "screen_id": "79e06348-ea2e-4666-85c2-5e1cc92a9f44",
+        "image_url": "https://mobbin.com/api/mcp/short/MdcYFp7c",
+        "position": 3,
+        "mobbin_url": "https://mobbin.com/screens/79e06348-ea2e-4666-85c2-5e1cc92a9f44",
+        "filename": "03.webp"
+      }
+    ],
+    "folder": "05-alan"
+  },
+  {
+    "id": "90c19a86-7e4f-4b14-9672-dbd530f6be8a",
+    "name": "Sharing a challenge",
+    "actions": [
+      "Chatting & Sending Messages",
+      "Sharing"
+    ],
+    "mobbin_url": "https://mobbin.com/flows/90c19a86-7e4f-4b14-9672-dbd530f6be8a",
+    "app_name": "Strava",
+    "platform": "ios",
+    "screen_count": 4,
+    "screens": [
+      {
+        "screen_id": "0bff9aef-4e9d-457a-a996-3274af80bdfd",
+        "image_url": "https://mobbin.com/api/mcp/short/J6okmEM7",
+        "position": 1,
+        "mobbin_url": "https://mobbin.com/screens/0bff9aef-4e9d-457a-a996-3274af80bdfd",
+        "filename": "01.webp"
+      },
+      {
+        "screen_id": "45b3a97a-87c3-4da8-84fe-51c40720adbc",
+        "image_url": "https://mobbin.com/api/mcp/short/LGmqrVAX",
+        "position": 2,
+        "mobbin_url": "https://mobbin.com/screens/45b3a97a-87c3-4da8-84fe-51c40720adbc",
+        "filename": "02.webp"
+      },
+      {
+        "screen_id": "ed3a94d6-8653-49cb-ae00-b73098d3c29d",
+        "image_url": "https://mobbin.com/api/mcp/short/hAumHe6o",
+        "position": 3,
+        "mobbin_url": "https://mobbin.com/screens/ed3a94d6-8653-49cb-ae00-b73098d3c29d",
+        "filename": "03.webp"
+      },
+      {
+        "screen_id": "559106be-3663-4df0-beb8-d01de7cd7aac",
+        "image_url": "https://mobbin.com/api/mcp/short/oONpQy9N",
+        "position": 4,
+        "mobbin_url": "https://mobbin.com/screens/559106be-3663-4df0-beb8-d01de7cd7aac",
+        "filename": "04.webp"
+      }
+    ],
+    "folder": "06-strava-brooks"
+  }
+]

@@ -303,6 +303,13 @@ survive failed reads and catch up on a subsequent task or foreground refresh.
 
 ### Native widget publishing
 
+[observed 2026-10-13 — challenge implementation] The scheduled task also serves
+the weekly Run Club challenge. It remains registered while there is an active
+shoe or a current enrolled challenge, after the Health request has been answered.
+Both readers run from the same task and retain their own cached aggregates. See
+[LLP 0008](./0008-us-run-club-promotions.research.md#weekly-challenge-implementation).
+The existing shoe widget design and App Group remain unchanged.
+
 [Superseded 2026-10-13] The previous HealthKit observer implementation wrote
 Expo's private App Group timeline format from Swift and maintained a native
 snapshot. Those components and their contract tests have been removed in

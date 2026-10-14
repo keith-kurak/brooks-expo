@@ -146,6 +146,11 @@ record per workout (`kind`, `start`, `durationMinutes`, `distanceMeters`,
 `elevationGainMeters`, `indoor`) and one step total per day. This is at most a
 few hundred records.
 
+[observed 2026-10-13] Records now also include the HealthKit workout UUID, `id`,
+so weekly challenges can deduplicate a query. JavaScript accepts older binaries
+without it. The purpose string also names weekly running challenges. The native
+module still makes no eligibility decisions. See LLP 0008#weekly-challenge-implementation.
+
 Daily steps come from an `HKStatisticsCollectionQuery`, not a sample sum.
 [inferred — Apple's documented statistics behavior, not tested here] HealthKit
 removes duplicate samples when both an iPhone and an Apple Watch

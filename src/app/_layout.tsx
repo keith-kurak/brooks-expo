@@ -12,6 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AnimatedSplash } from '@/components/animated-splash';
 import { CartProvider } from '@/store/cart';
 import { useMileageSync } from '@/store/shoes';
+import { useChallengeSync } from '@/store/challenges';
 import { colors, header, nativeSheetHeader } from '@/theme';
 import { isAppClip } from '@/utils/app-clip';
 
@@ -26,6 +27,7 @@ export const unstable_settings = isAppClip ? { initialRouteName: 'new-arrivals' 
 
 export default function RootLayout() {
   useMileageSync();
+  useChallengeSync();
   const [fontsLoaded] = useFonts({
     'FilsonPro-Regular': require('../../assets/fonts/FilsonProRegular.otf'),
     'FilsonPro-Medium': require('../../assets/fonts/FilsonProMedium.otf'),
@@ -123,6 +125,19 @@ export default function RootLayout() {
                 }}
               />
               <Stack.Protected guard={!isAppClip}>
+                <Stack.Screen
+                  name="join-challenge"
+                  listeners={{ transitionEnd: event => {
+                    // Health/UIKit restores its status style while dismissing.
+                    // Use Expo's imperative API after the sheet transition,
+                    // consistent with this app's application-level status bar.
+                    if (event.data.closing) StatusBar.setStyle('light', true);
+                  } }}
+                  options={{ title: 'Weekly 5K', presentation: 'formSheet', sheetAllowedDetents: [0.78, 1],
+                    sheetGrabberVisible: true, contentStyle: { backgroundColor: colors.surface },
+                    ...(nativeSheetHeader && header.sheet) }}
+                />
+                <Stack.Screen name="challenge-details" options={{ title: 'Weekly 5K', ...header.plain }} />
                 {/* Adding a pair the runner owns, from the Shoes tab or a
                     PDP. A form sheet like `Filter & sort`, for the same reason:
                     the root stack presents it. @ref LLP 0006#adding-a-pair */}

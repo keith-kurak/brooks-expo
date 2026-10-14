@@ -51,7 +51,8 @@ export default function TabStackLayout({ segment }: { segment: string }) {
             headerTransparent: true,
           }}
         >
-          <Stack.Screen name={screenName} options={{ headerShown: false }} />
+          <Stack.Screen name={screenName} options={{ headerShown: false, title: screenName === 'account' ? 'Profile' : undefined }} />
+          <Stack.Screen name="challenges" options={{ title: 'Challenges', headerShown: true }} />
           {/* Pushed in any tab: the Shoes tab, the Browse card and the Profile
               row all open it. Its full-bleed navy panel has no room for a
               header, so it draws its own back control. */}
