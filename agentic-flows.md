@@ -1,4 +1,5 @@
-## Flows to demo\
+## Flows to demo
+0. (maybe) Android and iOS in simulator preview only
 1. Developing in an orchestrator like Conductor or Paseo with EAS Simulators
 2. Validation with a tag on a PR, branch between iOS and Android. Show simulator previews.
 3. e2e bug bash with EAS Simulators

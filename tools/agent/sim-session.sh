@@ -9,7 +9,8 @@
 #                                  `development`, an APK); prints its id
 #                                  (exit 1: none). Default: ios
 #   metro-port                     the port of a Metro server started from
-#                                  this worktree (exit 1: none)
+#                                  this worktree, a tunneled one first
+#                                  (exit 1: none)
 #   metro-url [port]               the public https URL of the Metro tunnel
 #                                  on <port> (default 8081)
 #   start --name <text> --build-id <id> [--open-url <url>] [--dev]
@@ -124,19 +125,29 @@ cmd_dev_build() {
 }
 
 # A Metro server is ours when its process runs from this worktree, so a
-# Metro from another worktree is never picked up.
+# Metro from another worktree is never picked up. A tunneled one wins over
+# a local-only one, because only a tunneled Metro reaches a cloud device.
 cmd_metro_port() {
-  local root port pid cwd
+  local root port pid cwd first=""
   root=$(git rev-parse --show-toplevel)
   for port in $(seq 8081 8099); do
-    pid=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -n 1)
+    # lsof exits 1 for a free port; under pipefail that must not end the scan.
+    pid=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -n 1 || true)
     [ -n "$pid" ] || continue
-    cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
-    if [ "$cwd" = "$root" ] && curl -fsS -o /dev/null -H "expo-platform: ios" "http://127.0.0.1:${port}/" 2>/dev/null; then
+    cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' || true)
+    [ "$cwd" = "$root" ] || continue
+    curl -fsS -o /dev/null -H "expo-platform: ios" "http://127.0.0.1:${port}/" 2>/dev/null || continue
+    if cmd_metro_url "$port" >/dev/null 2>&1; then
       echo "$port"
       return
     fi
+    [ -n "$first" ] || first=$port
   done
+  if [ -n "$first" ]; then
+    echo "$first"
+    echo "sim-session: Metro on $first runs from this worktree but is not tunneled" >&2
+    return
+  fi
   die "no Metro server from $root on ports 8081-8099"
 }
 

@@ -171,6 +171,38 @@ only a Metro whose process runs from this worktree.
 `exp+ecommerce-demo` scheme, and `--open-url` on a `web-preview-only`
 session. eas-cli accepts `--open-url` for every session type.
 
+## The Expo Agent CLI
+
+[confirmed — Keith Kurak, 2026-10-15] Agents favor `npx @expo/agent-cli`
+(github.com/expo/expo-agent-cli) for Expo commands, in a hybrid with the
+session tooling above: agent-cli for `status`, `install`, `typecheck`,
+`doctor`, `start`, and `runtime:reload | errors | tree`; `sim-session.sh`
+and argent for the cloud session and screen-level driving. AGENTS.md
+("Expo commands") holds the rule.
+
+[observed — @expo/agent-cli 1.0.18 package source, 2026-10-15] Its EAS
+commands start sessions with `--type agent-device`, and only that type is
+"drivable": an argent session is reported as another type, not used. With
+several live sessions in the Expo project it prefers the id in the
+worktree's `.env.eas-simulator`, then the requested platform, then the
+newest. So `--eas` would not see an `eas-sim-dev` session, and a worktree
+without its own session could take another worktree's. The `--eas` flags
+are therefore not used here.
+
+[observed 2026-10-15] For this project, `dev --ios --plan` plans
+`expo prebuild` plus a local `expo run:ios` build (rule `dev-client-stale`,
+because Xcode is installed and no build is recorded), and it drops
+`--tunnel` because the plan ends in `run:ios`. So the dev server for the
+cloud loop is `EXPO_UNSTABLE_TUNNEL_V2=1 npx @expo/agent-cli start --
+--tunnel --port <port>`, which gave an `https://<id>.on.expo.app` tunnel;
+`runtime:errors` against it answered `NO_APP_CONNECTED` (exit 1) while no
+app was connected. [inferred] `runtime:*` reaches a cloud app because it
+talks to Metro's debugger, not to the device; not yet observed with a
+connected cloud app.
+
+[inferred] The CI agents keep `bun run typecheck` in their fixed tool
+lists, so a CI run does not change with an agent-cli release.
+
 ## The agent-validate label
 
 [observed] `expo-bot-verify.yml` also has a `pull_request_labeled` trigger
@@ -197,6 +229,18 @@ holder of an Expo token can start them.
 agents. The tool allowlists above limit what a prompt injection can do: the
 agents that read device state cannot edit files, and the agents that edit
 files cannot run arbitrary shell commands or push.
+
+## Fork only
+
+[confirmed — Keith Kurak, 2026-10-15] Pull requests, issues, and comments
+go to the fork `keith-kurak/brooks-expo` only, never to the upstream
+repository `SchroederNathan/brooks-expo`. [observed] The pipeline already
+complies: every workflow sets `GH_REPO: keith-kurak/brooks-expo`, `gh.mjs`
+calls the REST API for that repository, `fix-issue.sh` pushes to a clone of
+it, and the bridge acts on `github.repository`. For people and local agents,
+AGENTS.md ("Pull requests") names the repository on every `gh pr create`,
+and this clone's `gh` default is the fork (`gh repo set-default`, stored in
+`.git/config`, so all worktrees of this clone share it).
 
 ## Setup
 

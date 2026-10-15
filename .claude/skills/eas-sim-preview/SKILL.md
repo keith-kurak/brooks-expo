@@ -17,7 +17,10 @@ https://github.com/expo/skills/blob/main/plugins/expo/skills/eas-simulator/SKILL
 > stop by themselves after `--minutes` (default 30). Stop them earlier with
 > `preview-stop` (step 5) when the person is done.
 
-All commands are in `tools/agent/sim-session.sh`. Preview sessions write no
+Session commands are in `tools/agent/sim-session.sh`. For the dev server
+and the project checks, use the Expo Agent CLI (`npx @expo/agent-cli`;
+AGENTS.md, "Expo commands"), but not its `--eas` flags: they drive only
+`agent-device` sessions, and these previews have no controller. Preview sessions write no
 `.env.eas-simulator`, so they do not touch an `eas-sim-dev` session in the
 same worktree. The script finds them again by a tag named after the
 worktree (`preview-<worktree folder>`), and it allows one preview per
@@ -71,7 +74,7 @@ METRO_URL=$(bash tools/agent/sim-session.sh metro-url $PORT)
 
   ```bash
   PORT=8082; while lsof -nP -iTCP:$PORT -sTCP:LISTEN >/dev/null; do PORT=$((PORT+1)); done
-  EXPO_UNSTABLE_TUNNEL_V2=1 bunx expo start --tunnel --port $PORT > "$SCRATCH/metro.log" 2>&1
+  EXPO_UNSTABLE_TUNNEL_V2=1 npx @expo/agent-cli start -- --tunnel --port $PORT > "$SCRATCH/metro.log" 2>&1
   ```
 
   Wait for the `Waiting on exp+ecommerce-demo://…on.expo.app` line, then

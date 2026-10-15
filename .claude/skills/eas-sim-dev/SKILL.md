@@ -22,6 +22,14 @@ the change on both iOS and Android, use the `eas-sim-preview` skill: it
 opens browser-only previews on the same Metro and does not touch this
 session.
 
+**Tools.** Use the Expo Agent CLI (`npx @expo/agent-cli`) for the project,
+the dev server, and the JavaScript runtime: `status`, `start`,
+`runtime:reload`, `runtime:errors`, `runtime:tree`, `typecheck` (AGENTS.md,
+"Expo commands"). Use `sim-session.sh` and argent for the cloud session and
+for screen-level driving. Do not use agent-cli's `dev --ios`, `smoke`, or
+`--eas` flags here: in this project `dev --ios` plans a local Xcode build,
+and the `--eas` flags drive only `agent-device` sessions, not this argent one.
+
 All session logic is in `tools/agent/sim-session.sh`. The CI agents
 (`expo-bot-issue`, `expo-bot-verify`) use the same script, so a local run
 and a CI run start the session the same way. Run `bash
@@ -40,6 +48,7 @@ Do these once per run, before you start anything:
 
 ```bash
 pwd                                                  # must be the brooks-expo root
+npx @expo/agent-cli status                           # project, dev server, what to run next
 npx --yes eas-cli@latest whoami                      # logged in to the right account
 npx --yes eas-cli@latest simulator:availability --json   # "available": true
 cat .env.eas-simulator 2>/dev/null                   # a session id here may still be live
@@ -81,8 +90,11 @@ the scratchpad. Do not set `CI=1`: it turns off the file watcher, and then
 Fast Refresh does nothing.
 
 ```bash
-EXPO_UNSTABLE_TUNNEL_V2=1 bunx expo start --tunnel --port $PORT > "$SCRATCH/metro.log" 2>&1
+EXPO_UNSTABLE_TUNNEL_V2=1 npx @expo/agent-cli start -- --tunnel --port $PORT > "$SCRATCH/metro.log" 2>&1
 ```
+
+`agent-cli start` is `expo start` plus a sync of package agent skills;
+everything after `--` goes to `expo start` unchanged.
 
 Wait until the log has a `Waiting on exp+ecommerce-demo://…on.expo.app`
 line, then get the public URL and build the dev-client link:
@@ -120,12 +132,24 @@ an `iOS Bundled …` line. If it does not appear within about a minute,
 reset once (step 7, then steps 2-3 again). If the second try also fails,
 stop and report. Do not reconnect or restart Metro in place.
 
+Then check from the runtime side that the app connected:
+
+```bash
+npx @expo/agent-cli runtime:errors --port $PORT     # exit 1 NO_APP_CONNECTED = the app did not load
+```
+
 ## 4. Drive the app with argent
 
 Read the `argent-device-interact` skill before the first interaction. Its
 rules apply here: run a discovery tool (`describe`) before every tap, and
 never take tap coordinates from a screenshot. Coordinates are normalized
 0.0-1.0.
+
+For React components, `npx @expo/agent-cli runtime:tree --port $PORT`
+lists the focused screen's testIDs, labels, and handlers from the React
+tree. It has no geometry and does not see native views (the tab bar, system
+dialogs), so use it to find what to check, and argent `describe` for where
+to tap.
 
 **Option A, CLI (default).** `sim-session.sh argent` loads the session
 config and adds `--udid`:
@@ -163,10 +187,22 @@ App facts for driving Brooks:
 ## 5. Change the code and check it
 
 Edit the source. Fast Refresh sends the change to the cloud simulator, so
-there is no rebuild. After each change, run `describe` again (old frames
-are stale) and take a screenshot of the result. Keep the project rules in
+there is no rebuild. When a screen kept old state, or before you judge a
+fix, put the app on the code on disk and read what it threw:
+
+```bash
+npx @expo/agent-cli runtime:reload --port $PORT
+npx @expo/agent-cli runtime:errors --port $PORT --duration 5s
+```
+
+`runtime:errors` replays errors the app reported before, so reload first.
+An empty window means nothing was thrown while it watched, not that the app
+is healthy.
+
+After each change, run `describe` again (old frames are stale) and take a
+screenshot of the result. Keep the project rules in
 AGENTS.md: read an `@ref LLP` before you change the code it governs, and run
-`bun run typecheck` before you finish.
+`npx @expo/agent-cli typecheck` before you finish.
 
 A change to native code does not hot reload. Stop (step 7), build a new
 dev-client build (step 1), and start again.
@@ -208,7 +244,15 @@ Then stop the background Metro task (TaskStop, or kill the
 
 ## 8. Hand off to CI
 
-Push the branch and open the PR. To run the same check in CI, add the
+Push the branch to the fork and open the PR there, never on the upstream
+repository (AGENTS.md, "Pull requests"):
+
+```bash
+git push -u origin HEAD
+gh pr create --repo keith-kurak/brooks-expo --base main --head "$(git branch --show-current)"
+```
+
+To run the same check in CI, add the
 `agent-validate` label to the PR. `expo-bot-verify.yml` then reviews the
 diff, repacks a `simulator` build with the PR's JavaScript, verifies it on a
 new cloud simulator, and posts the verdict and the evidence page on the PR
