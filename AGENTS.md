@@ -102,4 +102,9 @@ Exceptions in this repo:
   Android emulator only when the user asks for one.
 - One cloud iOS simulator per worktree. Stop it when the task is done.
 - To show a person the change on iOS and Android, use `eas-sim-preview`.
+- For a bug bash, or to write and run e2e tests in `e2e/`, use the
+  `e2e-bug-bash` skill (e2e by TesterArmy on EAS Simulators). Each explorer
+  and each test run leases its own cloud simulator; that is the exception
+  to one simulator per worktree. `bun run test:e2e` leaves out repro tests
+  tagged `bugbash`.
 - See [LLP 0009](./llp/0009-testflight-agent-pipeline.design.md#local-development).
