@@ -257,8 +257,8 @@ function Row({ label, detail, onPress }: { label: string; detail?: string; onPre
  * The tab bar switch. Only a Liquid Glass device has a second bar to offer, so
  * everywhere else the row is not drawn.
  *
- * @ref LLP 0003#liquid-glass-is-a-profile-toggle — Off by default: the
- * app-drawn bar is the brand's, and the system bar is opt-in.
+ * @ref LLP 0003#liquid-glass-is-a-profile-toggle — On by default: a glass
+ * device wears the system bar, and the app-drawn bar is opt-in.
  */
 function GlassTabsRow() {
   const on = useNativeTabs();
