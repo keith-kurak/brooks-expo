@@ -3,7 +3,7 @@
 # built) with this PR's JS, lets Claude Code verify the PR (screenshots
 # into evidence/), deploys the evidence to EAS Hosting, comments the result
 # on the PR, and emits step outputs.
-# Requires: BUILD_ID, PR_NUMBER, GH_REPO, GITHUB_TOKEN, EXPO_TOKEN_SIMULATOR,
+# Requires: BUILD_ID, PR_NUMBER, GH_REPO, GH_TOKEN, EXPO_TOKEN_SIMULATOR,
 #           CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY
 # Optional: INSTRUCTION (reviewer guidance from the @expo-bot comment, or
 #           the issue verdict when fix-issue.sh dispatched this run)
@@ -25,8 +25,8 @@ else
   echo "Add a personal access token as EXPO_TOKEN_SIMULATOR in the production environment."
   exit 1
 fi
-if [ -z "${GITHUB_TOKEN:-}" ]; then
-  echo "GITHUB_TOKEN is not set; add a GitHub token with pull-request write"
+if [ -z "${GH_TOKEN:-}" ]; then
+  echo "GH_TOKEN is not set; add a GitHub token with pull-request write"
   echo "access as a secret env var in the production EAS environment."
   exit 1
 fi

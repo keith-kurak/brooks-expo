@@ -7,7 +7,7 @@
 # made (the reason is in /tmp/fix-summary.md). With AUTO_VERIFY=true it
 # also dispatches expo-bot-verify.yml on the PR and writes the run URL to
 # /tmp/fix-verify-run-url.
-# Requires: ISSUE_NUMBER, BASE_BRANCH, GH_REPO, GITHUB_TOKEN, EVIDENCE_URL,
+# Requires: ISSUE_NUMBER, BASE_BRANCH, GH_REPO, GH_TOKEN, EVIDENCE_URL,
 #           VERDICT_LINE, CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY
 # Optional: AUTO_VERIFY (default true; "false" skips the verify dispatch),
 #           EXPO_TOKEN (needed to dispatch the verify run)
@@ -28,7 +28,7 @@ rm -rf "$FIX_DIR" /tmp/fix-summary.md
 # clone. Its node_modules are reused (same branch, same lockfile) so the
 # type check runs without a second install.
 git clone --depth 1 --branch "$BASE_BRANCH" \
-  "https://x-access-token:${GITHUB_TOKEN}@github.com/${GH_REPO}.git" "$FIX_DIR"
+  "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$FIX_DIR"
 ln -s "$ORIG_DIR/node_modules" "$FIX_DIR/node_modules"
 # .gitignore's "node_modules/" matches directories only; a symlink is a
 # file to git, so without this `git add -A` commits the link into the PR.

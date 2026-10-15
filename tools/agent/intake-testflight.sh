@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Thin wrapper for the TestFlight intake job: picks the token, runs the
 # intake script, and publishes its result as step outputs.
-# Requires: FEEDBACK_KIND (screenshot|crash), GH_REPO, GITHUB_TOKEN,
+# Requires: FEEDBACK_KIND (screenshot|crash), GH_REPO, GH_TOKEN,
 #           BASE_BRANCH, EXPO_TOKEN_SIMULATOR (or an EXPO_TOKEN that can
 #           read the project's App Store Connect API key)
 # Optional: ASC_FEEDBACK_ID (trigger context),
@@ -14,8 +14,8 @@ set -euo pipefail
 if [ -n "${EXPO_TOKEN_SIMULATOR:-}" ]; then
   export EXPO_TOKEN="$EXPO_TOKEN_SIMULATOR"
 fi
-if [ -z "${GITHUB_TOKEN:-}" ]; then
-  echo "GITHUB_TOKEN is not set; add a GitHub token with issues write"
+if [ -z "${GH_TOKEN:-}" ]; then
+  echo "GH_TOKEN is not set; add a GitHub token with issues write"
   echo "access as a secret env var in the production EAS environment."
   exit 1
 fi

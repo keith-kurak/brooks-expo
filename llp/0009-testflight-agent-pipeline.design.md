@@ -62,7 +62,7 @@ known result: INCONCLUSIVE for triage, FAIL for verification, no PR for a
 fix. A `trap` posts an error comment if a script exits before its result
 comment, so no issue or PR stays without a reply.
 
-[observed] Comments use the account that owns the `GITHUB_TOKEN` EAS
+[observed] Comments use the account that owns the `GH_TOKEN` EAS
 environment variable, because `tools/agent/gh.mjs` calls the GitHub REST API
 with it. The bridge's acknowledgement comments use `github-actions[bot]`.
 Every bot comment starts with `## 🤖`. `gh.mjs get-issue` removes those
@@ -256,7 +256,7 @@ workflows fail at the first step that needs them.
 4. Add EAS environment variables (secret, `production` environment):
    `EXPO_TOKEN_SIMULATOR` (a personal access token; EAS Simulator sessions
    are actor-gated), `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`)
-   or `ANTHROPIC_API_KEY`, and `GITHUB_TOKEN` (issues, contents, and pull
+   or `ANTHROPIC_API_KEY`, and `GH_TOKEN` (issues, contents, and pull
    requests write).
 5. Add GitHub repository secrets for the bridge: `EXPO_TOKEN` and
    `CLAUDE_CODE_OAUTH_TOKEN`.

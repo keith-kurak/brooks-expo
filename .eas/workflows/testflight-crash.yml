@@ -13,7 +13,7 @@
 #   eas workflow:run testflight-crash.yml
 #
 # Env vars required (EAS environment variables, production environment):
-#   EXPO_TOKEN_SIMULATOR, CLAUDE_CODE_OAUTH_TOKEN, GITHUB_TOKEN
+#   EXPO_TOKEN_SIMULATOR, CLAUDE_CODE_OAUTH_TOKEN, GH_TOKEN
 #   (see testflight-feedback.yml)
 name: TestFlight crash intake
 
