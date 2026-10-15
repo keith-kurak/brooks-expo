@@ -18,14 +18,15 @@ const STORAGE_KEY = 'brooks.glassTabs.v1';
 /**
  * Which tab bar this device gets.
  *
- * @ref LLP 0003#liquid-glass-is-a-profile-toggle — The app-drawn
- * `BrooksTabBar` by default, everywhere. On a Liquid Glass device the Profile
- * tab can switch to the system bar (`NativeTabs`); the choice is stored, so it
- * holds across launches. Off a glass device the stored value is ignored.
+ * @ref LLP 0003#liquid-glass-is-a-profile-toggle — A Liquid Glass device opens
+ * on the system bar (`NativeTabs`); the Profile tab can switch it back to the
+ * app-drawn `BrooksTabBar`. Only an explicit choice is stored, so a device that
+ * never touched the switch follows this default. Off a glass device the stored
+ * value is ignored and the app-drawn bar is the only bar.
  *
  * Storage is synchronous, so the stored bar is the one the first frame mounts.
  */
-let glassTabs = LIQUID_GLASS && storage.get<boolean>(STORAGE_KEY, false);
+let glassTabs = LIQUID_GLASS && storage.get<boolean>(STORAGE_KEY, true);
 const listeners = new Set<() => void>();
 
 /**

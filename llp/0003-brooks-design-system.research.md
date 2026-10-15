@@ -635,6 +635,29 @@ glyphs as `BrooksTabBar`, not SF Symbols.
 
 ### Liquid Glass is a Profile toggle
 
+[observed 2026-10-15] [confirmed — human request, 2026-10-15: "switch to native
+tabs by default"] A Liquid Glass device now opens on `NativeTabs`. The Profile
+switch stays, and turning it off brings back `BrooksTabBar`. Devices without
+Liquid Glass still have only the app-drawn bar. The default lives in
+`storage.get(STORAGE_KEY, true)`; the key is unchanged, so a device that turned
+the switch off before keeps the app-drawn bar.
+
+- [observed 2026-10-15] On an EAS cloud iPhone (iOS 26) with the glass bar,
+  these screens came to rest above the bar with the top inset applied once:
+  Home, Browse, Cart (empty), Profile (guest), Your shoes, Challenges, and
+  Health data.
+- [observed 2026-10-15] Health data counted the bar twice: about 130pt below
+  the last row, not 48pt. It is a pushed screen with
+  `contentInsetAdjustmentBehavior="automatic"`, and UIKit already adds the glass
+  bar to the safe area of a pushed screen, so the extra
+  `contentInset={{ bottom: useTabBarOverlap() }}` doubled it. The screen now
+  takes no overlap. [inferred] Rule: a scroll root that uses `automatic` must
+  not also take `useTabBarOverlap()`; only `never` roots (`ScreenScrollView`,
+  Home, Browse) take it.
+- [observed 2026-10-15] Removing `contentInset` with Fast Refresh did not reset
+  the native inset; the screen had to mount again to show the fix.
+
+[superseded 2026-10-15 — the default is now the glass bar, see above]
 [observed 2026-10-06] Every device opens on the app-drawn `BrooksTabBar`. On a
 Liquid Glass device, Profile has a *Liquid Glass tab bar* switch that mounts
 `NativeTabs` instead. [confirmed — human request, 2026-10-06] The default is the

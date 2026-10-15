@@ -6,7 +6,6 @@ import { Press } from '@/components/press';
 import { Txt } from '@/components/themed-text';
 import { border, colors, spacing } from '@/theme';
 import { HEALTH_NAME, IS_HEALTH_CONNECT, openHealthSettings } from '@/utils/health';
-import { useTabBarOverlap } from '@/utils/native-tabs';
 import { exampleHealth, formatDuration, METERS_PER_MILE, type HealthSummary } from './summary';
 import { useHealthSummary, type HealthState } from './use-health-summary';
 
@@ -18,15 +17,15 @@ const kinds = { run: 'Run', walk: 'Walk', hike: 'Hike' };
 export function HealthData() {
   const [preview, setPreview] = useState(false);
   const { state, refresh, connect } = useHealthSummary();
-  const overlap = useTabBarOverlap();
   const summary = preview ? exampleHealth() : state.status === 'ready' ? state.summary : null;
   const hasData = summary?.hasData;
 
+  // `automatic` already clears the glass tab bar on this pushed screen, so it
+  // takes no `useTabBarOverlap()` inset: adding one counts the bar twice.
+  // @ref LLP 0003#liquid-glass-is-a-profile-toggle
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      contentInset={{ bottom: overlap }}
-      scrollIndicatorInsets={{ bottom: overlap }}
       showsVerticalScrollIndicator={false}
       style={styles.screen}
       contentContainerStyle={styles.content}

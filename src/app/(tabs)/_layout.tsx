@@ -15,9 +15,9 @@ import { takeLanding, useNativeTabs } from '@/utils/native-tabs';
  * @ref LLP 0006#shoes-opens-from-profile — Profile pushes Your shoes on its
  * own stack, so the owned pairs no longer need a tab of their own.
  *
- * @ref LLP 0003#liquid-glass-is-a-profile-toggle — Every device starts on the
- * app-drawn `BrooksTabBar`. A Liquid Glass device can switch to the system bar
- * (`NativeTabs`) from Profile. Both mount the same four array-group clones, so
+ * @ref LLP 0003#liquid-glass-is-a-profile-toggle — A Liquid Glass device
+ * starts on the system bar (`NativeTabs`); every other device has only the
+ * app-drawn `BrooksTabBar`. A glass device can switch back from Profile. Both mount the same four array-group clones, so
  * the routes, stacks, and anchors are identical either way.
  *
  * Each trigger targets one clone of the shared array-group Stack so every tab
