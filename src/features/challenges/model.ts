@@ -1,6 +1,15 @@
 import type { ActivityWorkout } from '../../../modules/brooks-activity/src/BrooksActivity.types';
 
-export const WEEKLY_GOAL_METERS = 5000;
+export const WEEKLY_GOAL_METERS = 10000;
+
+const goalKm = WEEKLY_GOAL_METERS / 1000;
+/** @ref LLP 0008#the-goal-is-javascript-only — Every label derives from the goal, so a new distance ships by EAS Update. */
+export const WEEKLY_GOAL = {
+  km: goalKm,
+  badge: `${goalKm}K`,
+  title: `Weekly ${goalKm}K`,
+  distance: `${goalKm} km`,
+} as const;
 
 export interface ChallengeWeek {
   id: string;
@@ -63,7 +72,7 @@ export function challengeProgress(summary: WeeklyRuns | null) {
   return {
     complete: meters >= WEEKLY_GOAL_METERS,
     share: Math.min(1, meters / WEEKLY_GOAL_METERS),
-    // Never round an unfinished 4.99 km up to the displayed 5 km goal.
+    // Never round an unfinished 9.99 km up to a displayed 10 km goal.
     distance: (Math.floor(meters / 100) / 10).toFixed(1),
     remaining: (Math.ceil(Math.max(0, WEEKLY_GOAL_METERS - meters) / 100) / 10).toFixed(1),
   };

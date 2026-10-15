@@ -7,7 +7,7 @@ import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 import { Button } from '@/components/button';
 import { Press } from '@/components/press';
 import { Txt } from '@/components/themed-text';
-import { challengeProgress } from '@/features/challenges/model';
+import { challengeProgress, WEEKLY_GOAL } from '@/features/challenges/model';
 import { isChallengeHealthAvailable, joinWeeklyChallenge, needsChallengeHealthAccess, refreshChallenges, useChallenges } from '@/store/challenges';
 import { useMember } from '@/store/member';
 import { colors, font, spacing } from '@/theme';
@@ -59,7 +59,7 @@ export function Challenges() {
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md }}>
             <Txt variant="h1" c={colors.surface} style={{ flex: 1, fontFamily: font.black }}>
-              {progress.complete && state.enrolled ? 'You did it.\nWeekly 5K.' : 'Run 5 km\nthis week.'}
+              {progress.complete && state.enrolled ? `You did it.\n${WEEKLY_GOAL.title}.` : `Run ${WEEKLY_GOAL.distance}\nthis week.`}
             </Txt>
             <WeeklyBadge complete={state.enrolled && progress.complete} />
           </View>
@@ -67,10 +67,10 @@ export function Challenges() {
             <>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm }}>
                 <Txt selectable c={colors.surface} testID="challenge-distance" style={{ fontFamily: font.black, fontSize: 66, lineHeight: 70, letterSpacing: -1.65, fontVariant: ['tabular-nums'], flexShrink: 1 }}>{progress.distance}</Txt>
-                <Txt c={colors.surface} style={{ fontFamily: font.medium, fontSize: 23, lineHeight: 30 }}>/ 5 km</Txt>
+                <Txt c={colors.surface} style={{ fontFamily: font.medium, fontSize: 23, lineHeight: 30 }}>/ {WEEKLY_GOAL.distance}</Txt>
               </View>
-              <View accessible accessibilityRole="progressbar" accessibilityLabel="Weekly 5K progress"
-                accessibilityValue={{ min: 0, max: 5, now: Math.min(5, (state.summary?.distanceMeters ?? 0) / 1000), text: `${progress.distance} of 5 kilometers` }}
+              <View accessible accessibilityRole="progressbar" accessibilityLabel={`${WEEKLY_GOAL.title} progress`}
+                accessibilityValue={{ min: 0, max: WEEKLY_GOAL.km, now: Math.min(WEEKLY_GOAL.km, (state.summary?.distanceMeters ?? 0) / 1000), text: `${progress.distance} of ${WEEKLY_GOAL.km} kilometers` }}
                 style={{ height: 8, backgroundColor: 'rgba(255,255,255,0.2)' }}>
                 <View style={{ width: `${progress.share * 100}%`, height: 8, backgroundColor: colors.lime }} />
               </View>
@@ -117,7 +117,7 @@ export function Challenges() {
             <View style={{ width: 28, paddingTop: 2 }}><GiftGlyph /></View>
             <View style={{ flex: 1, gap: 4 }}>
               <Txt variant="productTitle" style={{ fontSize: 17, lineHeight: 22 }}>{state.enrolled && progress.complete ? '1 entry earned' : 'A chance to win Brooks shoes'}</Txt>
-              <Txt variant="bodySmall" c={colors.inkSoft}>{state.enrolled && progress.complete ? "You're in the weekly shoe draw." : 'Finish the 5K for 1 draw entry.'}</Txt>
+              <Txt variant="bodySmall" c={colors.inkSoft}>{state.enrolled && progress.complete ? "You're in the weekly shoe draw." : `Finish the ${WEEKLY_GOAL.badge} for 1 draw entry.`}</Txt>
             </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 40, gap: spacing.sm, flexWrap: 'wrap' }}>

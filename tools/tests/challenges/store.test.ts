@@ -49,8 +49,9 @@ test('launch never prompts; explicit join requests once and repeated reads share
   expect(requestAccess).toHaveBeenCalledTimes(1);
   expect(challenges.getChallengesState().summary?.distanceMeters).toBe(3200);
   expect(props.distance).toBe('3.2');
-  expect(props.share).toBe(0.64);
+  expect(props.share).toBe(0.32);
   expect(props.url).toBe('ecomdemo:///(tabs)/(account)/challenges');
+  expect([props.title, props.goal, props.badge]).toEqual(['Weekly 10K', '10 km', '10K']);
   await challenges.refreshChallenges();
   expect(challenges.getChallengesState().summary?.distanceMeters).toBe(3200);
   expect(requestAccess).toHaveBeenCalledTimes(1);
@@ -74,10 +75,10 @@ test('an available Android health module does not enroll or read for the HealthK
 
 test('completed and deleted workouts update the widget; failed reads retain the cache and recover', async () => {
   await challenges.joinWeeklyChallenge();
-  workouts.push({ ...workouts[0], id: 'b', distanceMeters: 2200 });
+  workouts.push({ ...workouts[0], id: 'b', distanceMeters: 7200 });
   await challenges.refreshChallenges();
   expect(props.phase).toBe('complete');
-  expect(props.distance).toBe('5.4');
+  expect(props.distance).toBe('10.4');
   const saved = challenges.getChallengesState();
   getWorkouts.mockRejectedValueOnce(new Error('Health locked'));
   expect(await challenges.refreshChallenges()).toBe(false);

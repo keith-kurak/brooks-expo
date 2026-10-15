@@ -47,7 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         widgets: [
           {
             name: 'WeeklyChallenge',
-            displayName: 'Weekly 5K',
+            displayName: 'Weekly Challenge',
             description: 'Your weekly running goal, progress and earned challenge badge.',
             ios: { supportedFamilies: ['systemMedium'] },
           },

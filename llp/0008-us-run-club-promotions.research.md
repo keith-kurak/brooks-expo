@@ -401,9 +401,13 @@ Your shoes and Health data links are preserved alongside Challenges.
 weeks. Running workouts need finite, positive recorded distance; earlier runs
 before enrollment count. Native HealthKit UUIDs deduplicate a query, with a
 record fallback for older binaries. Queries replace totals, so repeated syncs,
-corrections and deletions cannot accumulate phantom distance. At least 5,000 m
-derives completion and one demo entry. Unfinished 4.99 km displays 4.9 km and
+corrections and deletions cannot accumulate phantom distance. At least 10,000 m
+derives completion and one demo entry. Unfinished 9.99 km displays 9.9 km and
 0.1 km remaining rather than implying completion through rounding.
+
+[confirmed — user request, 2026-10-15] The weekly goal is now 10 km, not 5 km.
+The earlier 5 km references in the Paper study and widget design above describe
+the original design. See [The goal is JavaScript only](#the-goal-is-javascript-only).
 
 [observed] `src/store/challenges.ts` persists only the latest enrollment and
 weekly aggregate per local member. Failed reads preserve the cached total and
@@ -462,3 +466,28 @@ Health-summary and filter tests passed, along with TypeScript and
 iOS/Android/web exports. Router checks and native iOS navigation verified
 Profile's anchor and all three destinations after the array-group rename.
 See the [merge diary](../diaries/2026-10-13-expo-challenges-merge.md).
+
+### The goal is JavaScript only
+
+[confirmed — user direction, 2026-10-15] A change to the goal distance or the
+challenge name must not need a new native build.
+
+[observed] `WEEKLY_GOAL_METERS` in `src/features/challenges/model.ts` is the
+only distance. `WEEKLY_GOAL` derives every label from it: the title
+("Weekly 10K"), the badge text ("10K") and the distance ("10 km"). Screens,
+route titles, accessibility labels and the widget read these labels.
+
+[observed] `expo-widgets` receives the widget layout as a string from the app's
+JavaScript at runtime, so the layout already updates with the bundle. The
+layout cannot read module constants, so the store publishes `title`, `goal`
+and `badge` in the widget props. The badge PNGs are frames only
+(`assets/challenges/weekly-badge*.png`); the widget draws the badge text over
+them in a `ZStack`, and the in-app `WeeklyBadge` draws it over SVG.
+
+[observed] The only native string is the widget gallery name in
+`app.config.ts`. It is now the goal-neutral "Weekly Challenge". Changing it
+from "Weekly 5K" changed the native fingerprint once; later goal changes do not.
+
+[observed] The widget copies each badge into the App Group only when the file
+does not exist. A redrawn frame therefore needs a new file name, or upgraded
+devices keep the old image.

@@ -32,15 +32,15 @@ test('counts each identified running workout once, including earlier runs, and m
   expect(result.distanceMeters).toBe(3200);
   expect(result.runs).toBe(2);
   expect(result.countedDays).toEqual([true, true, false, false, false, false, false]);
-  expect(challengeProgress(result)).toEqual({ complete: false, share: 0.64, distance: '3.2', remaining: '1.8' });
+  expect(challengeProgress(result)).toEqual({ complete: false, share: 0.32, distance: '3.2', remaining: '6.8' });
   expect(summarizeWeeklyRuns(workouts, week, now)).toEqual(result);
 });
 
 test('deletions and corrected distances replace totals; completion and its one entry are derived from valid distance', () => {
-  const complete = summarizeWeeklyRuns([run('a', 0, 3200), run('b', 3, 2200)], week, now);
-  expect(challengeProgress(complete)).toEqual({ complete: true, share: 1, distance: '5.4', remaining: '0.0' });
-  const corrected = summarizeWeeklyRuns([run('a', 0, 4999)], week, now);
-  expect(challengeProgress(corrected)).toEqual({ complete: false, share: 0.9998, distance: '4.9', remaining: '0.1' });
+  const complete = summarizeWeeklyRuns([run('a', 0, 6200), run('b', 3, 4200)], week, now);
+  expect(challengeProgress(complete)).toEqual({ complete: true, share: 1, distance: '10.4', remaining: '0.0' });
+  const corrected = summarizeWeeklyRuns([run('a', 0, 9999)], week, now);
+  expect(challengeProgress(corrected)).toEqual({ complete: false, share: 0.9999, distance: '9.9', remaining: '0.1' });
   expect(challengeProgress(summarizeWeeklyRuns([], week, now)).complete).toBe(false);
 });
 
