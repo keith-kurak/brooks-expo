@@ -3,7 +3,7 @@
 # The workflow is dispatched from a comment, so there is no pull_request
 # context and the checkout may lack git metadata, so the diff comes from the
 # GitHub API instead of git.
-# Requires: PR_NUMBER, GH_REPO, GITHUB_TOKEN,
+# Requires: PR_NUMBER, GH_REPO, GH_TOKEN,
 #           CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY
 # @ref LLP 0009#the-pipeline
 set -euo pipefail
@@ -11,8 +11,8 @@ set -euo pipefail
 # shellcheck disable=SC1091
 . tools/agent/comment-lib.sh
 
-if [ -z "${GITHUB_TOKEN:-}" ]; then
-  echo "GITHUB_TOKEN is not set; add a GitHub token with pull-request write"
+if [ -z "${GH_TOKEN:-}" ]; then
+  echo "GH_TOKEN is not set; add a GitHub token with pull-request write"
   echo "access as a secret env var in the production EAS environment."
   exit 1
 fi

@@ -8,7 +8,7 @@
 #   CONFIRMED      -> (feature request: capability absent) same path, the
 #                     PR implements it
 #   NOT-REPLICATED -> the issue gets the reasoning + evidence link
-# Requires: BUILD_ID, ISSUE_NUMBER, BASE_BRANCH, GH_REPO, GITHUB_TOKEN,
+# Requires: BUILD_ID, ISSUE_NUMBER, BASE_BRANCH, GH_REPO, GH_TOKEN,
 #           EXPO_TOKEN_SIMULATOR, CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY
 # Optional: INSTRUCTION (guidance from the @expo-bot comment or the intake)
 #           BUILD_STATUS, REPACK_STATUS (upstream job statuses)
@@ -31,8 +31,8 @@ else
   echo "Add a personal access token as EXPO_TOKEN_SIMULATOR in the production environment."
   exit 1
 fi
-if [ -z "${GITHUB_TOKEN:-}" ]; then
-  echo "GITHUB_TOKEN is not set; add a GitHub token with issues, contents,"
+if [ -z "${GH_TOKEN:-}" ]; then
+  echo "GH_TOKEN is not set; add a GitHub token with issues, contents,"
   echo "and pull-request write access in the production EAS environment."
   exit 1
 fi

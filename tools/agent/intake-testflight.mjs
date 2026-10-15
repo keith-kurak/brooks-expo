@@ -10,7 +10,7 @@
 //      duplicate, add the submission to the existing issue and stop
 //   5. dispatch expo-bot-issue.yml with auto_verify=true
 //
-// Requires: FEEDBACK_KIND (screenshot|crash), GH_REPO, GITHUB_TOKEN,
+// Requires: FEEDBACK_KIND (screenshot|crash), GH_REPO, GH_TOKEN,
 //           BASE_BRANCH, an EXPO_TOKEN that can read the ASC API key
 // Optional: ASC_FEEDBACK_ID (trigger context; may arrive uninterpolated),
 //           CLAUDE_CODE_OAUTH_TOKEN / ANTHROPIC_API_KEY (agent triage)

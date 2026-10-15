@@ -25,7 +25,7 @@
 #   EXPO_TOKEN_SIMULATOR      personal access token: reads the project's
 #                             ASC API key and dispatches expo-bot-issue
 #   CLAUDE_CODE_OAUTH_TOKEN   from `claude setup-token` (or ANTHROPIC_API_KEY)
-#   GITHUB_TOKEN              GitHub token with issues write
+#   GH_TOKEN                  GitHub token with issues write
 # Logic lives in tools/agent/intake-testflight.{sh,mjs} and the triage
 # prompt in tools/agent/prompts/ (EAS caps workflow YAML at 16 kB).
 # See LLP 0009 for the whole pipeline.

@@ -62,7 +62,7 @@ known result: INCONCLUSIVE for triage, FAIL for verification, no PR for a
 fix. A `trap` posts an error comment if a script exits before its result
 comment, so no issue or PR stays without a reply.
 
-[observed] Comments use the account that owns the `GITHUB_TOKEN` EAS
+[observed] Comments use the account that owns the `GH_TOKEN` EAS
 environment variable, because `tools/agent/gh.mjs` calls the GitHub REST API
 with it. The bridge's acknowledgement comments use `github-actions[bot]`.
 Every bot comment starts with `## 🤖`. `gh.mjs get-issue` removes those
@@ -171,6 +171,38 @@ only a Metro whose process runs from this worktree.
 `exp+ecommerce-demo` scheme, and `--open-url` on a `web-preview-only`
 session. eas-cli accepts `--open-url` for every session type.
 
+## The Expo Agent CLI
+
+[confirmed — Keith Kurak, 2026-10-15] Agents favor `npx @expo/agent-cli`
+(github.com/expo/expo-agent-cli) for Expo commands, in a hybrid with the
+session tooling above: agent-cli for `status`, `install`, `typecheck`,
+`doctor`, `start`, and `runtime:reload | errors | tree`; `sim-session.sh`
+and argent for the cloud session and screen-level driving. AGENTS.md
+("Expo commands") holds the rule.
+
+[observed — @expo/agent-cli 1.0.18 package source, 2026-10-15] Its EAS
+commands start sessions with `--type agent-device`, and only that type is
+"drivable": an argent session is reported as another type, not used. With
+several live sessions in the Expo project it prefers the id in the
+worktree's `.env.eas-simulator`, then the requested platform, then the
+newest. So `--eas` would not see an `eas-sim-dev` session, and a worktree
+without its own session could take another worktree's. The `--eas` flags
+are therefore not used here.
+
+[observed 2026-10-15] For this project, `dev --ios --plan` plans
+`expo prebuild` plus a local `expo run:ios` build (rule `dev-client-stale`,
+because Xcode is installed and no build is recorded), and it drops
+`--tunnel` because the plan ends in `run:ios`. So the dev server for the
+cloud loop is `EXPO_UNSTABLE_TUNNEL_V2=1 npx @expo/agent-cli start --
+--tunnel --port <port>`, which gave an `https://<id>.on.expo.app` tunnel;
+`runtime:errors` against it answered `NO_APP_CONNECTED` (exit 1) while no
+app was connected. [inferred] `runtime:*` reaches a cloud app because it
+talks to Metro's debugger, not to the device; not yet observed with a
+connected cloud app.
+
+[inferred] The CI agents keep `bun run typecheck` in their fixed tool
+lists, so a CI run does not change with an agent-cli release.
+
 ## The agent-validate label
 
 [observed] `expo-bot-verify.yml` also has a `pull_request_labeled` trigger
@@ -198,6 +230,18 @@ agents. The tool allowlists above limit what a prompt injection can do: the
 agents that read device state cannot edit files, and the agents that edit
 files cannot run arbitrary shell commands or push.
 
+## Fork only
+
+[confirmed — Keith Kurak, 2026-10-15] Pull requests, issues, and comments
+go to the fork `keith-kurak/brooks-expo` only, never to the upstream
+repository `SchroederNathan/brooks-expo`. [observed] The pipeline already
+complies: every workflow sets `GH_REPO: keith-kurak/brooks-expo`, `gh.mjs`
+calls the REST API for that repository, `fix-issue.sh` pushes to a clone of
+it, and the bridge acts on `github.repository`. For people and local agents,
+AGENTS.md ("Pull requests") names the repository on every `gh pr create`,
+and this clone's `gh` default is the fork (`gh repo set-default`, stored in
+`.git/config`, so all worktrees of this clone share it).
+
 ## Setup
 
 These steps are outside the repository. [inferred] Until they are done, the
@@ -212,7 +256,7 @@ workflows fail at the first step that needs them.
 4. Add EAS environment variables (secret, `production` environment):
    `EXPO_TOKEN_SIMULATOR` (a personal access token; EAS Simulator sessions
    are actor-gated), `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`)
-   or `ANTHROPIC_API_KEY`, and `GITHUB_TOKEN` (issues, contents, and pull
+   or `ANTHROPIC_API_KEY`, and `GH_TOKEN` (issues, contents, and pull
    requests write).
 5. Add GitHub repository secrets for the bridge: `EXPO_TOKEN` and
    `CLAUDE_CODE_OAUTH_TOKEN`.

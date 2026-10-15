@@ -6,6 +6,12 @@
   New Architecture enabled; routes live in `src/app`.
 - Bun 1.2.22 is the package manager (`bun.lock`). Use `bun run start`,
   `bun run ios`, `bun run android`, `bun run web`, and `bun run typecheck`.
+  Agents favor `npx @expo/agent-cli` (status, install, typecheck, doctor,
+  start, runtime:*) per AGENTS.md "Expo commands"; `dev --ios` plans a local
+  Xcode build here, and the `--eas` flags do not drive argent sessions.
+- PRs go to the fork `keith-kurak/brooks-expo` only, never upstream
+  `SchroederNathan/brooks-expo` (AGENTS.md "Pull requests"). This clone's
+  `gh` default repo is the fork.
 - `react-native-keyboard-controller` is in `expo.install.exclude`: the project
   uses `^1.22.4`, and `expo install --fix` would downgrade it to SDK 57's
   `1.21.9`. If `expo-doctor` reports a duplicate that a clean reinstall does

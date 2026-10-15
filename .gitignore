@@ -50,3 +50,8 @@ yarn-error.*
 
 # eas-simulator-evidence screenshots, verdicts, and built sites (tools/agent)
 /evidence/
+# @generated expo skills start
+.agents/skills/eas-simulator-evidence
+.claude/skills/eas-simulator-evidence
+.grok/skills/eas-simulator-evidence
+# @generated expo skills end

@@ -1,5 +1,5 @@
 // Minimal GitHub REST helper for EAS workflow jobs.
-// Requires: GITHUB_TOKEN, GH_REPO (owner/repo).
+// Requires: GH_TOKEN, GH_REPO (owner/repo).
 // Usage:
 //   node tools/agent/gh.mjs comment <number> "<body>"        (PR or issue)
 //   node tools/agent/gh.mjs get-pr <pr_number>
@@ -9,11 +9,11 @@
 //   node tools/agent/gh.mjs create-issue "<title>" "<body>" [label,label]
 //   node tools/agent/gh.mjs list-issues <label> [limit]      (open issues)
 
-const token = process.env.GITHUB_TOKEN;
+const token = process.env.GH_TOKEN;
 const repo = process.env.GH_REPO;
 
 if (!token || !repo) {
-  console.error('GITHUB_TOKEN and GH_REPO must be set');
+  console.error('GH_TOKEN and GH_REPO must be set');
   process.exit(1);
 }
 
