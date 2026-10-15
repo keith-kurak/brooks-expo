@@ -31,8 +31,24 @@ let pending = false;
  * No subscription: Browse reads this when it gains navigation focus, which
  * every caller's navigation causes anyway.
  */
-export function requestSearchFocus() {
+export function requestSearchFocus(origin?: string) {
   pending = true;
+  searchOrigin = origin;
+}
+
+/**
+ * The route the glyph was pressed on, so closing search can return there. Only
+ * set when search was opened from outside Browse; Browse clears it when it loses
+ * focus, so a later visit to Browse does not bounce the user back.
+ */
+let searchOrigin: string | undefined;
+
+export function getSearchOrigin() {
+  return searchOrigin;
+}
+
+export function clearSearchOrigin() {
+  searchOrigin = undefined;
 }
 
 /**
