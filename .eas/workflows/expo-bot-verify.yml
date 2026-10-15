@@ -122,7 +122,7 @@ jobs:
       BUILD_STATUS: ${{ after.build.status }}
       REPACK_STATUS: ${{ after.repack.status }}
       PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
-      INSTRUCTION: ${{ inputs.instruction }}
+      INSTRUCTION: ${{ inputs.instruction || '' }}
       GH_REPO: keith-kurak/brooks-expo
     outputs:
       evidence_url: ${{ steps.verify.outputs.evidence_url }}

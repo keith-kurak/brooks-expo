@@ -211,6 +211,11 @@ dispatch. Each job reads the PR number as
 `inputs.pr_number || github.event.pull_request.number`. A label run has no
 reviewer instruction, so the verify agent derives its checks from the diff.
 
+[observed 2026-10-15] A label run has no `inputs`, so `${{ inputs.instruction }}`
+has no value and EAS refuses the job (`[env.INSTRUCTION]: Invalid input.`).
+Every `env` value that reads a dispatch input needs a fallback, for example
+`${{ inputs.instruction || '' }}`.
+
 [inferred] The label trigger needs the GitHub repository connected to the
 EAS project, the `agent-validate` label in the repository, and the PR head
 in the same repository (EAS does not run PR triggers for forks). To run the
