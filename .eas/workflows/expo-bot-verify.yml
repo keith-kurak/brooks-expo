@@ -1,9 +1,16 @@
 # Expo bot PR verify
 #
-# Started by expo-bot-issue.yml on the fix PR it opens, or by an
-# "@expo-bot" comment on a pull request (through
-# .github/workflows/expo-bot-bridge.yml, which checks out the PR head
-# first, so every job here sees the PR's code):
+# Started three ways, all with the same jobs:
+#   - the `agent-validate` label on a PR (needs the GitHub repository
+#     connected to the EAS project; PRs from forks never trigger it)
+#   - expo-bot-issue.yml, on the fix PR it opens
+#   - an "@expo-bot" comment on a PR, through
+#     .github/workflows/expo-bot-bridge.yml, which checks out the PR head
+#     first so every job here sees the PR's code
+# The PR number is `inputs.pr_number` for a dispatch and
+# `github.event.pull_request.number` for the label; each use below takes
+# whichever is set. @ref LLP 0009#the-agent-validate-label
+#
 #
 #   1. review:   Claude reads the PR diff and posts a code review
 #   2. build:    find a fingerprint-matched simulator binary (or build one)
@@ -26,10 +33,13 @@ name: Expo bot PR verify
 
 # A new @expo-bot comment on the same PR replaces the run in progress.
 concurrency:
-  group: ${{ workflow.filename }}-pr-${{ inputs.pr_number }}
+  group: ${{ workflow.filename }}-pr-${{ inputs.pr_number || github.event.pull_request.number }}
   cancel_in_progress: true
 
 on:
+  pull_request_labeled:
+    labels:
+      - agent-validate
   workflow_dispatch:
     inputs:
       pr_number:
@@ -47,7 +57,7 @@ jobs:
     environment: production
     image: sdk-57
     env:
-      PR_NUMBER: ${{ inputs.pr_number }}
+      PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
       GH_REPO: keith-kurak/brooks-expo
     steps:
       - uses: eas/checkout
@@ -87,7 +97,7 @@ jobs:
     params:
       platform: ios
       profile: simulator
-      message: PR ${{ inputs.pr_number }} expo-bot verify
+      message: PR ${{ inputs.pr_number || github.event.pull_request.number }} expo-bot verify
 
   # A found binary carries the JS it was built with; repack swaps in the
   # PR's JS. A fresh build (above) already has it, so no repack then.
@@ -99,7 +109,7 @@ jobs:
     params:
       build_id: ${{ needs.get_build.outputs.build_id }}
       profile: simulator
-      message: PR ${{ inputs.pr_number }} expo-bot verify
+      message: PR ${{ inputs.pr_number || github.event.pull_request.number }} expo-bot verify
 
   verify:
     name: 6. Verify on cloud simulator
@@ -111,7 +121,7 @@ jobs:
       BUILD_ID: ${{ after.build.outputs.build_id || after.repack.outputs.build_id }}
       BUILD_STATUS: ${{ after.build.status }}
       REPACK_STATUS: ${{ after.repack.status }}
-      PR_NUMBER: ${{ inputs.pr_number }}
+      PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
       INSTRUCTION: ${{ inputs.instruction }}
       GH_REPO: keith-kurak/brooks-expo
     outputs:
@@ -151,7 +161,7 @@ jobs:
     needs: [verify]
     params:
       md: |
-        # 🤖 Expo bot verification for PR #${{ inputs.pr_number }}
+        # 🤖 Expo bot verification for PR #${{ inputs.pr_number || github.event.pull_request.number }}
 
         > ${{ needs.verify.outputs.verdict_shown }}
 

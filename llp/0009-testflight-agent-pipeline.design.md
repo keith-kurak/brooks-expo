@@ -5,6 +5,7 @@
 **Systems:** Expo App, EAS Workflows, Agent Development
 **Author:** Keith Kurak / Claude Opus 5.5
 **Date:** 2026-10-14
+**Revised:** 2026-10-14 (shared session script, local skill, label trigger)
 **Related:** [LLP 0000](./0000-brooks.explainer.md),
 [jacobhammerle/employee-onboarding](https://github.com/jacobhammerle/employee-onboarding)
 
@@ -44,6 +45,9 @@ App Store Connect beta_feedback (screenshot | crash)
                       tools/agent/verify-on-simulator.sh
                         EAS Simulator → Claude tests the PR → verdict comment
               NOT-REPLICATED | INCONCLUSIVE → reasoning on the issue
+
+`agent-validate` label on a PR
+  └─ expo-bot-verify.yml (pull_request_labeled trigger), same jobs as above
 
 "@expo-bot" comment by an owner, member, or collaborator
   └─ .github/workflows/expo-bot-bridge.yml
@@ -97,6 +101,67 @@ no downloaded update replaces the repacked bundle.
 because no existing build has the `simulator` channel and the `preview`
 environment. Later runs repack it.
 
+## The simulator session
+
+[observed] `tools/agent/sim-session.sh` owns every EAS Simulator session:
+start (with the build installed and launched), wait until live, read the
+argent connection config, find the device udid, run argent tools, build
+the evidence page, and stop. The CI agents call it through
+`start_simulator_session` in `comment-lib.sh`, and the `eas-sim-dev` skill
+calls it directly. Thus a local run and a CI run boot, drive, and record a
+session the same way, and a fix to the session logic reaches both.
+
+[observed] Evidence pages always come from `eas-simulator-evidence`
+(github.com/jacobhammerle/eas-simulator-evidence), through
+`sim-session.sh evidence`. That command passes `--name` and `--slug` from
+`brand.config.js`, because `app.json` has neither, and lets the tool stop
+the session: `eas simulator:stop` clears `.env.eas-simulator`, and the tool
+reads the session id from that file.
+
+## Local development
+
+[observed] `.claude/skills/eas-sim-dev/SKILL.md` is the local loop: a
+`development-simulator` dev-client build, Metro behind the account-signed
+Expo tunnel (`EXPO_UNSTABLE_TUNNEL_V2=1 expo start --tunnel`), and a session
+started with `--open-url exp+ecommerce-demo://expo-development-client/?url=<tunnel>`
+so the dev client loads Metro at launch. Edits reach the cloud simulator by
+Fast Refresh. It follows Mode C, Method 1 of the official Expo
+`eas-simulator` skill. [confirmed — Keith Kurak, 2026-10-14] The tunnel is
+the chosen transport for this loop.
+
+[observed 2026-10-14] With the v2 tunnel, Metro's manifest gives an
+`http://<id>.on.expo.app` launch asset, and the same host answers over
+`https`. `sim-session.sh metro-url` prints the `https` form.
+
+[confirmed — Keith Kurak, 2026-10-14] Local development uses one iOS
+simulator per git worktree, and no Android sessions: this is a demo, and
+more sessions add complexity without adding to it. Parallel work uses
+parallel worktrees, each with its own `.env.eas-simulator`, Metro port, and
+tunnel. `sim-session.sh start` refuses to start a second live session from
+the same dotenv.
+
+[observed] argent reads `ARGENT_TOOLS_URL` before `~/.argent/link.json`, so
+`sim-session.sh argent` (which loads the worktree's dotenv on every call)
+always reaches that worktree's session. [inferred] `sim-session.sh link`
+uses `argent link`, which is global to the machine: while it is linked,
+every argent client on that Mac without its own `ARGENT_TOOLS_URL`, in any
+worktree, drives the linked device. The skill allows the MCP path only when
+one worktree has a session, and unlinks in its cleanup step.
+
+## The agent-validate label
+
+[observed] `expo-bot-verify.yml` also has a `pull_request_labeled` trigger
+for the `agent-validate` label. The label path runs the same jobs as a
+dispatch. Each job reads the PR number as
+`inputs.pr_number || github.event.pull_request.number`. A label run has no
+reviewer instruction, so the verify agent derives its checks from the diff.
+
+[inferred] The label trigger needs the GitHub repository connected to the
+EAS project, the `agent-validate` label in the repository, and the PR head
+in the same repository (EAS does not run PR triggers for forks). To run the
+check again, remove the label and add it again. The `@expo-bot review`
+comment does the same through the bridge and does not need the connection.
+
 ## Security
 
 [observed] `keith-kurak/brooks-expo` is a public repository. The bridge runs
@@ -117,7 +182,8 @@ workflows fail at the first step that needs them.
 
 1. Enable Issues on the GitHub repository. [observed 2026-10-14]
    `has_issues` is `false` on `keith-kurak/brooks-expo`.
-2. Create a `testflight` label. The `bug` and `enhancement` labels exist.
+2. Create the `testflight` and `agent-validate` labels. The `bug` and
+   `enhancement` labels exist.
 3. In the EAS project, connect App Store Connect (Settings → Connections),
    and keep the intake workflow files on the default branch.
 4. Add EAS environment variables (secret, `production` environment):
@@ -127,7 +193,10 @@ workflows fail at the first step that needs them.
    requests write).
 5. Add GitHub repository secrets for the bridge: `EXPO_TOKEN` and
    `CLAUDE_CODE_OAUTH_TOKEN`.
-6. Test each stage by hand before relying on the trigger:
+6. Connect the GitHub repository to the EAS project (project settings →
+   GitHub) for the `agent-validate` label trigger. The deploy workflow's
+   push trigger needs the same connection.
+7. Test each stage by hand before relying on the trigger:
    `eas workflow:run expo-bot-issue.yml -F issue_number=<N>`, then
    `eas workflow:run testflight-feedback.yml`.
 

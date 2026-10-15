@@ -139,15 +139,13 @@ echo "========================================="
 
 # The evidence site: the session's own artifacts (cpu/mem samples, the
 # action timeline, the screen recording) plus the screenshots and the
-# report, deployed to EAS Hosting under a per-issue alias. --stop stops
-# the session as soon as the verdict is in (it bills until then). A
-# missing artifact never fails triage; a build or deploy failure does.
-# --json puts the summary on the last stdout line. --name and --slug are
-# explicit because app.json has neither; brand.config.js does.
-RUN_JSON=$(evidence_tool run "$EVIDENCE_DIR" --stop \
+# report, built by eas-simulator-evidence and deployed to EAS Hosting
+# under a per-issue alias. sim-session.sh evidence stops the session first
+# (it bills until then). A missing artifact never fails triage; a build or
+# deploy failure does. --json puts the summary on the last stdout line.
+RUN_JSON=$(bash tools/agent/sim-session.sh evidence "$EVIDENCE_DIR" \
   --subject "Issue #${ISSUE_NUMBER}" \
   --verdict "$VERDICT_LINE" --verdict-file /tmp/issue-verdict.md \
-  --name "$APP_NAME" --slug "$APP_SLUG" \
   --agent expo-bot --lane "Issue #${ISSUE_NUMBER}" --build-id "$BUILD_ID" \
   --deploy-alias "issue-${ISSUE_NUMBER}-evidence" --json)
 EVIDENCE_URL=$(node -e "

@@ -47,3 +47,6 @@ yarn-error.*
 # Argent screen recordings — writing these into the project root retriggers
 # Metro's file watcher and reloads the running app mid-QA.
 .argent/
+
+# eas-simulator-evidence screenshots, verdicts, and built sites (tools/agent)
+/evidence/

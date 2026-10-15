@@ -138,11 +138,10 @@ cat /tmp/verify-verdict.md
 echo "========================================="
 
 # The evidence site, deployed to EAS Hosting under a per-PR alias. See
-# validate-issue.sh for what --stop, --json, --name, and --slug do.
-RUN_JSON=$(evidence_tool run "$EVIDENCE_DIR" --stop \
+# validate-issue.sh for what sim-session.sh evidence and --json do.
+RUN_JSON=$(bash tools/agent/sim-session.sh evidence "$EVIDENCE_DIR" \
   --subject "PR #${PR_NUMBER}" \
   --verdict "$VERDICT_LINE" --verdict-file /tmp/verify-verdict.md \
-  --name "$APP_NAME" --slug "$APP_SLUG" \
   --agent expo-bot --lane "PR #${PR_NUMBER}" --build-id "$BUILD_ID" \
   --deploy-alias "pr-${PR_NUMBER}-evidence" --json)
 EVIDENCE_URL=$(node -e "

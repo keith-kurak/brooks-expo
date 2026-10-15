@@ -52,66 +52,11 @@ evidence_thumbs() { evidence_tool thumbs "$1" "$2" --max 4; }
 
 # Boots an argent-type EAS Simulator session with BUILD_ID installed and
 # launched, waits for it, and exports ARGENT_TOOLS_URL, ARGENT_AUTH_TOKEN,
-# and UDID. $1 is the session name (cut to 50 characters).
+# and UDID. $1 is the session name. tools/agent/sim-session.sh owns the
+# session logic, so CI and local development start sessions the same way.
 start_simulator_session() {
-  local name=${1:0:50}
-  npx --yes eas-cli@latest simulator:start --platform ios --type argent \
-    --build-id "$BUILD_ID" \
-    --max-duration-minutes 30 --non-interactive --name "$name"
-
-  local live="" s
-  for _ in $(seq 1 64); do
-    s=$(npx --yes eas-cli@latest simulator:get --json --non-interactive 2>/dev/null || true)
-    if echo "$s" | grep -q '"status": "IN_PROGRESS"' && echo "$s" | grep -q remoteConfig; then
-      live=1
-      break
-    fi
-    if echo "$s" | grep -qE '"status": "(STOPPED|ERRORED)"'; then
-      echo "Simulator session failed to boot."
-      return 1
-    fi
-    sleep 15
-  done
-  [ -n "$live" ] || { echo "Session not ready in time."; return 1; }
-
-  # An argent session's connection config lands in .env.eas-simulator;
-  # exporting it routes every local `argent run` to the session's remote
-  # tool-server.
-  set -a
-  # shellcheck disable=SC1091
-  . ./.env.eas-simulator
-  set +a
-  if [ -z "${ARGENT_TOOLS_URL:-}" ] || [ -z "${ARGENT_AUTH_TOKEN:-}" ]; then
-    # Fallback: pull them out of the session's remoteConfig.
-    eval "$(npx --yes eas-cli@latest simulator:get --json --non-interactive | node -e "
-      let d = '';
-      process.stdin.on('data', c => d += c);
-      process.stdin.on('end', () => {
-        const found = {};
-        (function walk(o) {
-          if (!o || typeof o !== 'object') return;
-          for (const [k, v] of Object.entries(o)) {
-            if ((k === 'ARGENT_TOOLS_URL' || k === 'ARGENT_AUTH_TOKEN') && typeof v === 'string') found[k] = v;
-            else walk(v);
-          }
-        })(JSON.parse(d.slice(d.indexOf('{'))));
-        for (const [k, v] of Object.entries(found)) console.log(\`export \${k}=\${JSON.stringify(v)}\`);
-      });
-    ")"
-  fi
-  if [ -z "${ARGENT_TOOLS_URL:-}" ] || [ -z "${ARGENT_AUTH_TOKEN:-}" ]; then
-    echo "argent connection config not found in .env.eas-simulator or simulator:get."
-    return 1
-  fi
-  export ARGENT_TOOLS_URL ARGENT_AUTH_TOKEN
-
-  UDID=$(bash tools/agent/argent.sh run list-devices \
-    | grep -oE '"udid" *: *"[^"]+"' | head -n 1 | sed -E 's/.*"([^"]+)"$/\1/')
-  if [ -z "$UDID" ]; then
-    echo "No device udid in the argent session's list-devices output."
-    return 1
-  fi
-  export UDID
+  bash tools/agent/sim-session.sh start --name "$1" --build-id "$BUILD_ID" --tag expo-bot
+  eval "$(bash tools/agent/sim-session.sh env)"
   echo "argent session device: $UDID"
 }
 
