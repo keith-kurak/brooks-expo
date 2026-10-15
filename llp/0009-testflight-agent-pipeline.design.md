@@ -230,6 +230,32 @@ agents. The tool allowlists above limit what a prompt injection can do: the
 agents that read device state cannot edit files, and the agents that edit
 files cannot run arbitrary shell commands or push.
 
+## e2e bug bash
+
+[observed] `e2e.config.ts` sets up e2e (TesterArmy, `e2e@0.21.0`,
+`@e2e-dev/mobile@0.12.1`, `@e2e-dev/eas@0.3.1`) with one target, `ios`, on
+EAS Simulators: `easSimulators({ buildId: E2E_BUILD_ID })` leases one hosted
+simulator per worker and EAS installs the `development-simulator` dev-client
+build. `app.launchArguments` carries `--initialUrl <E2E_METRO_URL>` plus the
+expo-dev-menu flags, the form the e2e setup guide gives for an Expo
+development build, so every fresh launch loads this worktree's tunneled
+Metro. `e2e.bugbash.config.ts` adds the guide's exploration budgets
+(`maxSteps`/`maxModelCalls` 40), the `skeptic` and `fuzzer` personas, and
+Brooks context: email-only device-local sign-in, a Checkout button that
+does nothing, no Health data on the simulator. The `e2e-bug-bash` skill wraps
+`npx e2e guide bug-bash` with the Brooks steps.
+
+[observed 2026-10-15] Both configs type-check with the app (`bun run
+typecheck`) and load in `e2e list`, and the base config fails to load with a
+message naming `E2E_BUILD_ID` and `E2E_METRO_URL` when either is missing.
+The model is Anthropic through `ANTHROPIC_API_KEY` (`E2E_MODEL`, default
+`claude-sonnet-5-5`); the guide's table says a Claude Max or Team plan needs
+a Claude Console API key for this.
+
+[inferred] Not yet run end to end: the `--initialUrl` launch on an EAS
+simulator, the dev client loading a `--no-dev --minify` Metro, and several
+`e2e explore` processes each leasing its own session from one target.
+
 ## Fork only
 
 [confirmed — Keith Kurak, 2026-10-15] Pull requests, issues, and comments

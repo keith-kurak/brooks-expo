@@ -50,6 +50,9 @@ yarn-error.*
 
 # eas-simulator-evidence screenshots, verdicts, and built sites (tools/agent)
 /evidence/
+
+# e2e (TesterArmy) run output and bug-bash explorer runs (e2e.config.ts)
+.e2e/
 # @generated expo skills start
 .agents/skills/eas-simulator-evidence
 .claude/skills/eas-simulator-evidence

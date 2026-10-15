@@ -40,7 +40,12 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@ai-sdk/anthropic": "^4.0.70",
+    "@e2e-dev/eas": "0.3.1",
+    "@e2e-dev/mobile": "0.12.1",
     "@types/react": "~19.2.2",
+    "ai": "^7.0.124",
+    "e2e": "0.21.0",
     "eas-simulator-evidence": "^0.2.2",
     "typescript": "~6.0.3"
   },
@@ -55,7 +60,8 @@
     "test:filters": "bun test tools/tests/filters",
     "harvest": "cd tools/harvest && node harvest.js && node harvest-reviews.js && node validate-editorial.js",
     "harvest:reviews": "node tools/harvest/harvest-reviews.js",
-    "sync": "node tools/harvest/sync.js"
+    "sync": "node tools/harvest/sync.js",
+    "test:e2e": "e2e run --exclude-tag bugbash"
   },
   "private": true,
   "expo": {
