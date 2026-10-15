@@ -37,6 +37,11 @@ export interface ProductImage {
    */
   url: string;
   alt: string;
+  /**
+   * Blurred stand-in shown while the photo loads. Added by
+   * `tools/harvest/harvest-blurhash.js`; absent if the CDN refused the sample.
+   */
+  blurhash?: string;
 }
 
 /** One customer review from Brooks's TurnTo-backed PDP endpoint. */

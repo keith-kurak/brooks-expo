@@ -4,7 +4,8 @@ The shared Brooks data layer for both apps.
 
 - `catalog.json` — a normalized snapshot of the real Brooks US catalog, produced
   by [`tools/harvest`](../tools/harvest). Products, colorways, prices, per-size
-  stock, specs, ratings, and image URLs.
+  stock, specs, ratings, and image URLs. Each image also carries a blurhash
+  placeholder from `tools/harvest/harvest-blurhash.js`.
 - `reviews.json` — the current rating summary, fit dimensions, and three newest
   TurnTo reviews for every catalog product, captured from Brooks's PDP controllers.
 - `types.ts` — the schema both apps program against.
@@ -23,5 +24,6 @@ Regenerate and sync the snapshots with:
 ```sh
 bun run harvest                  # catalog + missing review records
 bun run harvest:reviews --refresh # refresh every review record
+bun run harvest:blurhash         # hash images that lack a blurhash
 bun run sync                     # copy package snapshots into the app
 ```

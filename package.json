@@ -58,8 +58,9 @@
     "test:health-sync": "bun test tools/tests/health-sync/health-sync.test.ts",
     "test:challenges": "bun test tools/tests/challenges",
     "test:filters": "bun test tools/tests/filters",
-    "harvest": "cd tools/harvest && node harvest.js && node harvest-reviews.js && node validate-editorial.js",
+    "harvest": "cd tools/harvest && node harvest.js && node harvest-reviews.js && node harvest-blurhash.js && node validate-editorial.js",
     "harvest:reviews": "node tools/harvest/harvest-reviews.js",
+    "harvest:blurhash": "node tools/harvest/harvest-blurhash.js",
     "sync": "node tools/harvest/sync.js",
     "test:e2e": "e2e run --exclude-tag bugbash"
   },

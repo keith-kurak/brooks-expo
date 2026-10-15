@@ -5,7 +5,7 @@
 **Systems:** Brooks, Shared, Expo App, Exact App, Data
 **Author:** Claude Fable 5
 **Date:** 2026-07-13
-**Revised:** 2026-10-13
+**Revised:** 2026-10-15
 **Related:** LLP 0000, LLP 0003, LLP 0004
 
 ## Summary
@@ -268,6 +268,40 @@ and output-format parameters at the call site. Editorial sources are checked by
 `npm --prefix tools/harvest run validate:editorial`, which requires both an
 `image/*` content type and a recognized image signature; denied CMS story
 assets use related catalog photography from the resized public CDN.
+
+## Image placeholders
+
+[observed 2026-10-15] An uncached resized image takes about 4 s to arrive
+from the CDN. Without a placeholder, a tile is an empty square for that time.
+
+Decision: every catalog image carries a `blurhash` string, computed at harvest
+time by `tools/harvest/harvest-blurhash.js` and bundled with the snapshot.
+`ShoeImage` and `Photo` look it up by bare URL (`blurhashFor` in
+`src/data/catalog.ts`) and pass it to `expo-image` as `placeholder`, with
+`placeholderContentFit` equal to `contentFit` so the blur does not jump in
+scale when the photo replaces it.
+
+- [observed] The script samples each image at 32 px with the same `sm=fit`,
+  `sfrm=png`, `bgcolor=F8F8F8` shape the app requests, so the blur matches
+  the framing and near-white background on screen. It encodes 4×4 components
+  (about 28 characters per image).
+- [observed] Node's `fetch` gets `200 image/jpeg` from the CDN. `curl` and Bun
+  `fetch` get `403 text/html` for the same URL, with or without a browser
+  user agent. The script therefore runs under Node.
+- [inferred] Hashes live in the catalog, not in a runtime computation:
+  deriving one on device would need the photo it is a placeholder for.
+- [observed 2026-10-15] First run: 4782 of 4783 unique image URLs hashed in
+  about 37 minutes at 6 concurrent requests. One CMS image in the catalog
+  returns `200 text/html` and has no hash. `catalog.json` grew from 1.97 MB
+  to 2.22 MB.
+- [observed 2026-10-15] On the EAS cloud simulator, with the photo source
+  blocked on purpose, the blurred placeholders showed on PLP tiles and
+  swatches, the PDP gallery and swatches, and the Browse franchise art. With
+  real URLs, a first visit to a category showed blurred swatches for a few
+  seconds before the photos replaced them.
+- Images outside the snapshot (live Constructor search results) have no hash
+  and keep the plain background. The script is resumable and skips images
+  that already have a hash; a failed sample leaves the field absent.
 
 ## The harvested catalog
 
