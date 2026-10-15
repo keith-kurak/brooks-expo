@@ -1,0 +1,19 @@
+# One iOS production build, nothing else: the same as
+#   eas build --platform ios --profile production
+# but run as a workflow, so it can start from a git ref on GitHub instead of
+# an upload of the local project (useful on a slow or broken connection):
+#   eas workflow:run .eas/workflows/build-ios-production.yml --ref <branch-or-sha>
+# The ref must be pushed, and this file must exist at that ref. No submit,
+# no TestFlight upload, no update; deploy.yml does those on pushes to main.
+name: Build iOS (production)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build_ios:
+    name: Build iOS for the store
+    type: build
+    params:
+      platform: ios
+      profile: production
