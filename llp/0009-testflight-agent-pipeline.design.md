@@ -203,6 +203,20 @@ connected cloud app.
 [inferred] The CI agents keep `bun run typecheck` in their fixed tool
 lists, so a CI run does not change with an agent-cli release.
 
+## Comment 403
+
+[observed 2026-10-15] On PR #4 the review comment failed with `403
+Resource not accessible by personal access token`. In the same minute the
+same `GH_TOKEN` posted the review on PR #3 and the error comment on PR #4,
+through the same endpoint. So the token scope was not the cause; the
+review body was the only input that changed. The body was not logged, so
+the trigger is unknown.
+
+[inferred] `gh.mjs comment` now logs the 403 message, the request id, the
+`X-Accepted-GitHub-Permissions` and rate-limit headers, and the first 40
+lines of the body, then retries once after 10 s. A second failure still
+exits 1, so the caller's `trap` posts the error comment.
+
 ## The agent-validate label
 
 [observed] `expo-bot-verify.yml` also has a `pull_request_labeled` trigger
