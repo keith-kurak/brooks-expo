@@ -1,6 +1,6 @@
-import { HStack, Image, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { HStack, Image, ProgressView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
-  containerBackground, font, foregroundStyle, frame, lineLimit, minimumScaleFactor,
+  containerBackground, font, foregroundStyle, frame, kerning, lineLimit, minimumScaleFactor,
   monospacedDigit, resizable, tint, widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
 import { requireOptionalNativeModule } from 'expo';
@@ -28,8 +28,8 @@ const WeeklyChallenge = (props: WidgetProps, environment: WidgetEnvironment) => 
   if (!active) {
     return (
       <VStack alignment="leading" spacing={8} modifiers={[containerBackground(NAVY, 'widget'), widgetURL(props.url), frame({ maxWidth: 10000, maxHeight: 10000, alignment: 'leading' })]}>
-        <Text modifiers={[font({ family: 'FilsonPro-Bold', size: 14 }), foregroundStyle(WHITE)]}>Weekly 5K</Text>
-        <Text modifiers={[font({ family: 'FilsonPro-Black', size: 26 }), foregroundStyle(WHITE), lineLimit(2)]}>Run 5 km this week.</Text>
+        <Text modifiers={[font({ family: 'FilsonPro-Bold', size: 14 }), foregroundStyle(WHITE)]}>{props.title}</Text>
+        <Text modifiers={[font({ family: 'FilsonPro-Black', size: 26 }), foregroundStyle(WHITE), lineLimit(2)]}>{`Run ${props.goal} this week.`}</Text>
         <Text modifiers={[font({ family: 'FilsonPro-Medium', size: 12 }), foregroundStyle(WHITE)]}>Join in Brooks</Text>
       </VStack>
     );
@@ -38,17 +38,22 @@ const WeeklyChallenge = (props: WidgetProps, environment: WidgetEnvironment) => 
   return (
     <VStack alignment="leading" spacing={8} modifiers={[containerBackground(NAVY, 'widget'), widgetURL(props.url), frame({ maxWidth: 10000, maxHeight: 10000 })]}>
       <HStack>
-        <Text modifiers={[font({ family: 'FilsonPro-Bold', size: 14 }), foregroundStyle(WHITE), lineLimit(1)]}>Weekly 5K</Text>
+        <Text modifiers={[font({ family: 'FilsonPro-Bold', size: 14 }), foregroundStyle(WHITE), lineLimit(1)]}>{props.title}</Text>
         <Spacer />
         <Text modifiers={[font({ family: 'FilsonPro-Regular', size: 12 }), foregroundStyle(WHITE), lineLimit(1)]}>{complete ? 'Complete' : 'Ends Sunday'}</Text>
       </HStack>
       <HStack spacing={12} modifiers={[frame({ maxHeight: 10000 })]}>
         <HStack alignment="firstTextBaseline" spacing={6}>
           <Text modifiers={[font({ family: 'FilsonPro-Black', size: 48 }), foregroundStyle(WHITE), monospacedDigit(), lineLimit(1), minimumScaleFactor(0.65)]}>{props.distance}</Text>
-          <Text modifiers={[font({ family: 'FilsonPro-Medium', size: 17 }), foregroundStyle(WHITE), lineLimit(1)]}>/ 5 km</Text>
+          <Text modifiers={[font({ family: 'FilsonPro-Medium', size: 17 }), foregroundStyle(WHITE), lineLimit(1)]}>{`/ ${props.goal}`}</Text>
         </HStack>
         <Spacer />
-        {badge ? <Image uiImage={badge} modifiers={[resizable(), frame({ width: 56, height: 56 })]} /> : <Image systemName={complete ? 'checkmark.seal' : 'hexagon'} color={complete ? LIME : WHITE} size={42} />}
+        {badge ? (
+          <ZStack modifiers={[frame({ width: 56, height: 56 })]}>
+            <Image uiImage={badge} modifiers={[resizable(), frame({ width: 56, height: 56 })]} />
+            <Text modifiers={[font({ family: 'FilsonPro-Black', size: 17 }), kerning(-0.4), foregroundStyle(WHITE), lineLimit(1), minimumScaleFactor(0.6), frame({ maxWidth: 38 })]}>{props.badge}</Text>
+          </ZStack>
+        ) : <Image systemName={complete ? 'checkmark.seal' : 'hexagon'} color={complete ? LIME : WHITE} size={42} />}
       </HStack>
       <ProgressView value={props.share} modifiers={[tint(LIME), frame({ maxWidth: 10000, height: 6 })]} />
       <HStack>
@@ -82,16 +87,17 @@ function publish() {
 }
 
 // Images must be copied to the shared App Group, not left in the app's sandbox.
+// An existing copy is never replaced: give a redrawn frame a new file name.
 if (native?.widgetsDirectory) {
   const directory = new Directory(native.widgetsDirectory);
   Promise.all([
-    require('../../assets/challenges/weekly-5k.png'),
-    require('../../assets/challenges/weekly-5k-complete.png'),
+    require('../../assets/challenges/weekly-badge.png'),
+    require('../../assets/challenges/weekly-badge-complete.png'),
   ].map(async (source: number, index) => {
     const asset = await Asset.fromModule(source).downloadAsync();
     if (!asset.localUri) return '';
     directory.create({ intermediates: true, idempotent: true });
-    const file = new File(directory, `weekly-5k-${index}.png`);
+    const file = new File(directory, `weekly-badge-${index}.png`);
     if (!file.exists) new File(asset.localUri).copy(file);
     return file.uri;
   })).then(([progressBadge, completeBadge]) => {

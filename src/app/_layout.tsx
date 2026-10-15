@@ -10,6 +10,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AnimatedSplash } from '@/components/animated-splash';
+import { WEEKLY_GOAL } from '@/features/challenges/model';
 import { CartProvider } from '@/store/cart';
 import { useMileageSync } from '@/store/shoes';
 import { useChallengeSync } from '@/store/challenges';
@@ -133,11 +134,11 @@ export default function RootLayout() {
                     // consistent with this app's application-level status bar.
                     if (event.data.closing) StatusBar.setStyle('light', true);
                   } }}
-                  options={{ title: 'Weekly 5K', presentation: 'formSheet', sheetAllowedDetents: [0.78, 1],
+                  options={{ title: WEEKLY_GOAL.title, presentation: 'formSheet', sheetAllowedDetents: [0.78, 1],
                     sheetGrabberVisible: true, contentStyle: { backgroundColor: colors.surface },
                     ...(nativeSheetHeader && header.sheet) }}
                 />
-                <Stack.Screen name="challenge-details" options={{ title: 'Weekly 5K', ...header.plain }} />
+                <Stack.Screen name="challenge-details" options={{ title: WEEKLY_GOAL.title, ...header.plain }} />
                 {/* Adding a pair the runner owns, from Your shoes or a
                     PDP. A form sheet like `Filter & sort`, for the same reason:
                     the root stack presents it. @ref LLP 0006#adding-a-pair */}

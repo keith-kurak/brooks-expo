@@ -6,6 +6,7 @@ import { Button } from '@/components/button';
 import { BrooksIcon } from '@/components/icons';
 import { Press } from '@/components/press';
 import { Txt } from '@/components/themed-text';
+import { WEEKLY_GOAL } from '@/features/challenges/model';
 import { isChallengeHealthAvailable, joinWeeklyChallenge, useChallenges } from '@/store/challenges';
 import { useMember } from '@/store/member';
 import { colors, font, headerIcon, nativeSheetHeader, spacing } from '@/theme';
@@ -23,11 +24,11 @@ export function JoinChallengeSheet() {
   return (
     <View collapsable={false} style={{ flex: 1, backgroundColor: colors.surface }}>
       {nativeSheetHeader ? <><Stack.Toolbar placement="right"><Stack.Toolbar.Button icon={headerIcon.close} accessibilityLabel="Close" onPress={() => router.back()} /></Stack.Toolbar><View collapsable={false} /></>
-        : <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.gutter }}><Txt variant="h3">Weekly 5K</Txt><Press accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()}><BrooksIcon name="closeThin" size={22} /></Press></View>}
+        : <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.gutter }}><Txt variant="h3">{WEEKLY_GOAL.title}</Txt><Press accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()}><BrooksIcon name="closeThin" size={22} /></Press></View>}
       <ScrollView contentInsetAdjustmentBehavior={nativeSheetHeader ? 'automatic' : 'never'}
         style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.gutter, gap: spacing.md }}>
         <Txt variant="eyebrow" c={colors.blue}>{state.week.label} · Brooks Run Club</Txt>
-        <Txt variant="h1" style={{ fontFamily: font.black }}>Run 5 km{'\n'}this week.</Txt>
+        <Txt variant="h1" style={{ fontFamily: font.black }}>Run {WEEKLY_GOAL.distance}{'\n'}this week.</Txt>
         <Txt c={colors.inkSoft}>Finish for 1 entry in the weekly shoe draw.{'\n'}One run or a few, at your pace.</Txt>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, backgroundColor: colors.surfaceAlt, marginTop: spacing.md }}>
           <View style={{ width: 32 }}><HealthGlyph /></View>

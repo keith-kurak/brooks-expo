@@ -3,7 +3,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
 import BrooksActivity from '../../modules/brooks-activity/src/BrooksActivityModule';
-import { challengeProgress, challengeWeek, summarizeWeeklyRuns, type ChallengeWeek, type WeeklyRuns } from '../features/challenges/model';
+import { challengeProgress, challengeWeek, summarizeWeeklyRuns, WEEKLY_GOAL, type ChallengeWeek, type WeeklyRuns } from '../features/challenges/model';
 import { isAppClip } from '../utils/app-clip';
 import { storage } from '../utils/kv-storage';
 import { updateWeeklyChallengeWidget } from '../widgets/weekly-challenge';
@@ -66,6 +66,7 @@ function publishWidget() {
   if (isAppClip) return;
   const progress = challengeProgress(state.summary);
   updateWeeklyChallengeWidget({
+    title: WEEKLY_GOAL.title, goal: WEEKLY_GOAL.distance, badge: WEEKLY_GOAL.badge,
     phase: state.enrolled ? progress.complete ? 'complete' : 'progress' : 'invitation',
     distance: progress.distance, remaining: `${progress.remaining} km to go`, share: progress.share,
     runsLabel: `${state.summary?.runs ?? 0} ${state.summary?.runs === 1 ? 'run' : 'runs'}`,
