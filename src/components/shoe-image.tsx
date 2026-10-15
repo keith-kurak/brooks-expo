@@ -1,5 +1,6 @@
 import { Image, type ImageStyle } from 'expo-image';
 
+import { blurhashFor } from '../data/catalog';
 import { brooksImage } from '../data/images';
 import { motion } from '../theme';
 
@@ -28,6 +29,8 @@ export function ShoeImage({
   return (
     <Image
       source={{ uri: brooksImage(url, { width: width * 2, height: h * 2 }) }}
+      placeholder={placeholderFor(url)}
+      placeholderContentFit={contentFit}
       style={[{ width, height: h }, style]}
       contentFit={contentFit}
       transition={transition}
@@ -36,4 +39,10 @@ export function ShoeImage({
       recyclingKey={url}
     />
   );
+}
+
+/** Blurhash placeholder for a catalog image, or none for live search results. */
+export function placeholderFor(url: string) {
+  const blurhash = blurhashFor(url);
+  return blurhash ? { blurhash } : undefined;
 }

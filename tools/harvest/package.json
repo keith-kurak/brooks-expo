@@ -4,13 +4,16 @@
   "private": true,
   "description": "Captures the real Brooks catalog into packages/catalog/catalog.json via a real browser session.",
   "scripts": {
-    "harvest": "node harvest.js && node validate-editorial.js",
+    "harvest": "node harvest.js && node harvest-blurhash.js && node validate-editorial.js",
+    "blurhash": "node harvest-blurhash.js",
     "sync": "node sync.js",
     "validate:editorial": "node validate-editorial.js",
     "sniff": "node sniff-network.js",
     "probe:cart": "node probe-cart.js"
   },
   "dependencies": {
-    "playwright": "^1.61.1"
+    "blurhash": "^2.0.5",
+    "playwright": "^1.61.1",
+    "sharp": "^0.35.5"
   }
 }

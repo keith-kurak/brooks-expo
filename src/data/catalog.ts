@@ -23,3 +23,26 @@ export const SHOP_SECTIONS = [
   { id: 'womens-apparel', label: "Women's Apparel" },
   { id: 'featured-best-sellers', label: 'Best Sellers' },
 ] as const;
+
+let blurhashes: Map<string, string> | undefined;
+
+/**
+ * The harvested blurhash for a catalog image, by its bare or sized CDN url.
+ * Images from outside the snapshot (live search results) have none.
+ *
+ * @ref LLP 0002#image-placeholders — Looked up by url so every `ShoeImage` and
+ * `Photo` gets a placeholder without threading hashes through each call site.
+ */
+export function blurhashFor(url: string): string | undefined {
+  if (!blurhashes) {
+    blurhashes = new Map();
+    for (const product of catalog.products) {
+      for (const color of product.colors) {
+        for (const image of color.images) {
+          if (image.blurhash) blurhashes.set(image.url, image.blurhash);
+        }
+      }
+    }
+  }
+  return blurhashes.get(url.split('?')[0]);
+}
