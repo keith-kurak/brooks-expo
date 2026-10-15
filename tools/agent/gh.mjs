@@ -17,7 +17,7 @@ if (!token || !repo) {
   process.exit(1);
 }
 
-async function api(method, path, body) {
+async function request(method, path, body) {
   const res = await fetch(`https://api.github.com${path}`, {
     method,
     headers: {
@@ -29,12 +29,19 @@ async function api(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    console.error(`GitHub API ${method} ${path} failed: ${res.status}`);
-    console.error(JSON.stringify(json, null, 2));
-    process.exit(1);
-  }
-  return json;
+  return { res, json };
+}
+
+function fail(method, path, { res, json }) {
+  console.error(`GitHub API ${method} ${path} failed: ${res.status}`);
+  console.error(JSON.stringify(json, null, 2));
+  process.exit(1);
+}
+
+async function api(method, path, body) {
+  const result = await request(method, path, body);
+  if (!result.res.ok) fail(method, path, result);
+  return result.json;
 }
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -42,10 +49,31 @@ const [cmd, ...args] = process.argv.slice(2);
 switch (cmd) {
   case 'comment': {
     const [number, body] = args;
-    const comment = await api('POST', `/repos/${repo}/issues/${number}/comments`, {
-      body,
-    });
-    console.log(JSON.stringify({ url: comment.html_url }));
+    const path = `/repos/${repo}/issues/${number}/comments`;
+    let result = await request('POST', path, { body });
+    // A 403 here was seen once (PR #4, 2026-10-15) while the same token
+    // posted other comments in the same minute, so the body is the likely
+    // trigger. Log what GitHub and the body show, then retry once.
+    // @ref LLP 0009#comment-403
+    if (result.res.status === 403) {
+      const { res, json } = result;
+      console.error(`GitHub API POST ${path} returned 403; retrying once in 10 s.`);
+      console.error(`  message: ${json.message ?? '(none)'}`);
+      for (const h of [
+        'x-github-request-id',
+        'x-accepted-github-permissions',
+        'x-ratelimit-remaining',
+        'retry-after',
+      ]) {
+        console.error(`  ${h}: ${res.headers.get(h) ?? '(none)'}`);
+      }
+      console.error(`  body: ${body.length} chars, ${body.split('\n').length} lines; first 40 lines:`);
+      console.error(body.split('\n').slice(0, 40).map((l) => `  | ${l}`).join('\n'));
+      await new Promise((r) => setTimeout(r, 10_000));
+      result = await request('POST', path, { body });
+    }
+    if (!result.res.ok) fail('POST', path, result);
+    console.log(JSON.stringify({ url: result.json.html_url }));
     break;
   }
   case 'get-pr': {
