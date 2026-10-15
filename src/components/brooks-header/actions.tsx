@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { BrooksIcon, type BrooksIconName } from '@/components/icons';
@@ -96,13 +96,27 @@ const BUILT_INS: Record<HeaderActionName, Omit<HeaderActionConfig, 'key' | 'badg
   },
 };
 
-function resolve(action: HeaderAction): HeaderActionConfig {
+function resolve(action: HeaderAction, pathname: string): HeaderActionConfig {
   if (typeof action !== 'string') return action;
+  if (action === 'search') {
+    return {
+      key: action,
+      ...BUILT_INS.search,
+      // Remember where search was opened from, so its X can return there. Browse
+      // itself has nowhere to return to.
+      onPress: () => {
+        const onBrowse = pathname === '/shop' || pathname.startsWith('/shop/');
+        requestSearchFocus(onBrowse ? undefined : pathname);
+        router.navigate('/(tabs)/(shop)/shop');
+      },
+    };
+  }
   return { key: action, ...BUILT_INS[action] };
 }
 
 export function HeaderActions({ actions }: { actions: readonly HeaderAction[] }) {
   const { count } = useCart();
+  const pathname = usePathname();
 
   // A screen may want the wordmark alone, and an empty row would still take the
   // gutter the `space-between` row gives it.
@@ -111,7 +125,7 @@ export function HeaderActions({ actions }: { actions: readonly HeaderAction[] })
   return (
     <View style={styles.row}>
       {actions.map((action) => {
-        const config = resolve(action);
+        const config = resolve(action, pathname);
         // The cart's count is the store's, not the caller's: a screen should not
         // have to thread it through to keep the badge honest.
         const badge = config.key === 'cart' && !config.badge ? count : config.badge;

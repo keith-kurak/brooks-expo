@@ -25,7 +25,7 @@ import { catalog } from '@/data/catalog';
 import { VOICE } from '@/data/editorial';
 import { heroImage } from '@/data/images';
 import { countSearchFilters } from '@/data/search-query';
-import { consumeSearchFocus } from '@/store/search-focus';
+import { clearSearchOrigin, consumeSearchFocus, getSearchOrigin } from '@/store/search-focus';
 import { activateSearchFilters, getSearchFilterState, SEARCH_FILTER_SCOPE, useSearchFilterState } from '@/store/search-filters';
 import { border, colors, motion, spacing, type } from '@/theme';
 import { useTabBarOverlap } from '@/utils/native-tabs';
@@ -164,6 +164,18 @@ export function Shop() {
       };
     }, [])
   );
+
+  // The origin only matters while Browse is focused; drop it on leaving so a
+  // later visit to Browse does not send the X back to a stale tab.
+  useFocusEffect(useCallback(() => clearSearchOrigin, []));
+
+  const closeSearch = () => {
+    barRef.current?.reset();
+    const origin = getSearchOrigin();
+    if (!origin) return;
+    clearSearchOrigin();
+    router.navigate(origin as Parameters<typeof router.navigate>[0]);
+  };
 
   const wrapStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -TITLE_ROW * progress.get() }],
@@ -338,7 +350,7 @@ export function Shop() {
             icon="close"
             iconSize={14}
             accessibilityLabel="Close search"
-            onPress={() => barRef.current?.reset()}
+            onPress={closeSearch}
           />
         </Animated.View>
         <Animated.View style={barStyle}>
