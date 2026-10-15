@@ -1,6 +1,6 @@
 ---
 name: eas-sim-dev
-description: Develop and test a Brooks change live on an EAS cloud iOS simulator. Starts Metro behind the Expo tunnel, boots an EAS Simulator session with the dev-client build connected to it, and drives the app with argent (CLI or MCP) while Fast Refresh shows each edit. Ends with an evidence page from eas-simulator-evidence. Use when asked to fix and check a bug or a PR "on the cloud simulator", "on EAS Simulator", "with argent on a remote sim", or to reproduce an expo-bot issue locally before pushing.
+description: The default way to run, test, or check Brooks on a device. Develop and test a change live on an EAS cloud iOS simulator - Metro behind the Expo tunnel, an EAS Simulator session with the dev-client build connected to it, argent (CLI or MCP) to drive the app, Fast Refresh for each edit, and an evidence page from eas-simulator-evidence. Use for any request to reproduce a bug, check a UI change, verify a fix, take screenshots, or "run it on the simulator" in this repo, even when the user does not say "cloud" and local simulators exist (AGENTS.md, "Testing on a device"). Use a local simulator only when the user asks for one.
 ---
 
 # Live development on EAS Simulator

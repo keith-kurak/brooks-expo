@@ -18,7 +18,10 @@
   Android mismatch guidance are superseded.
 - `bun run test:health-sync` runs Bun tests for Expo task registration, shared
   foreground/background reads, errors, deletions and concurrent shoe changes. TypeScript is checked with `bun run typecheck`;
-  app UI is validated interactively with Argent. Visual baselines, when present,
+  app UI is validated interactively with Argent on an EAS cloud iOS
+  simulator by default (`eas-sim-dev` skill; see AGENTS.md "Testing on a
+  device"). The local-simulator notes below apply only when a local
+  simulator is requested. Visual baselines, when present,
   live under `.baselines/ios` and `.baselines/android`.
 - iOS 27.x simulators crash dev builds at launch (no `UIApplicationSceneManifest`
   in the generated Info.plist). Verify on an iOS 26.5 simulator, which also has
