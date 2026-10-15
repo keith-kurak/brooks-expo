@@ -17,7 +17,10 @@ source: https://github.com/expo/skills/blob/main/plugins/expo/skills/eas-simulat
 session at a time. To work on two changes at once, use two git worktrees:
 each has its own `.env.eas-simulator`, Metro port, and tunnel. Do not start
 a second session in the same worktree, and do not start an Android session;
-Android is out of scope for this demo.
+agent-driven Android work is out of scope for this demo. To show a person
+the change on both iOS and Android, use the `eas-sim-preview` skill: it
+opens browser-only previews on the same Metro and does not touch this
+session.
 
 All session logic is in `tools/agent/sim-session.sh`. The CI agents
 (`expo-bot-issue`, `expo-bot-verify`) use the same script, so a local run

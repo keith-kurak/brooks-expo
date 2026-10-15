@@ -176,7 +176,7 @@ The workflow also declares a push trigger for `main`. That trigger remains inact
 
 ## TestFlight feedback to pull request
 
-A TestFlight screenshot or crash report starts an agent pipeline. It files a GitHub issue, reproduces the report on an EAS cloud simulator, opens a fix PR, reviews it, and checks the fix on a second simulator. The evidence for each step goes on the issue or the PR. Comment `@expo-bot` on an issue or a PR to run it by hand, or add the `agent-validate` label to a PR to verify it. To develop a fix live on a cloud simulator, use the `eas-sim-dev` skill (`.claude/skills/eas-sim-dev`). The workflows are in `.eas/workflows/` (`testflight-*.yml`, `expo-bot-*.yml`) and `.github/workflows/expo-bot-bridge.yml`; the scripts and prompts are in `tools/agent/`. [LLP 0009](./llp/0009-testflight-agent-pipeline.design.md) explains the design and lists the setup steps.
+A TestFlight screenshot or crash report starts an agent pipeline. It files a GitHub issue, reproduces the report on an EAS cloud simulator, opens a fix PR, reviews it, and checks the fix on a second simulator. The evidence for each step goes on the issue or the PR. Comment `@expo-bot` on an issue or a PR to run it by hand, or add the `agent-validate` label to a PR to verify it. To develop a fix live on a cloud simulator, use the `eas-sim-dev` skill (`.claude/skills/eas-sim-dev`). To show the running dev server on cloud iOS and Android previews, use the `eas-sim-preview` skill. The workflows are in `.eas/workflows/` (`testflight-*.yml`, `expo-bot-*.yml`) and `.github/workflows/expo-bot-bridge.yml`; the scripts and prompts are in `tools/agent/`. [LLP 0009](./llp/0009-testflight-agent-pipeline.design.md) explains the design and lists the setup steps.
 
 ## App Clip
 

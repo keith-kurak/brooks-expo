@@ -26,6 +26,13 @@ the manifest answered over https (HTTP 200). `simulator:availability` is
 `true` for `keithco`. [inferred] No simulator session was started, so the
 start, argent, link, and evidence commands are not run end to end yet.
 
+[observed] Later the same day: added `.claude/skills/eas-sim-preview` and
+`sim-session.sh preview | preview-list | preview-stop | metro-port`, and
+`dev-build android`. `dev-build android`, `metro-port`, and `preview-list`
+ran against the real project: no `development` Android build exists yet,
+`metro-port` found a Metro on 8083 started from this worktree, and
+`metro-url 8083` correctly reported that Metro as not tunneled.
+
 ## What worked well
 
 - [observed] The official `eas-simulator` skill's Mode C, Method 1
@@ -67,5 +74,7 @@ Not observed.
 
 - Build the first `development-simulator` binary, then run the skill once
   end to end, including `link` with the argent MCP server.
+- Build the first Android `development` APK, then run `eas-sim-preview`
+  once end to end; the Android `--open-url` path is not yet observed.
 - Connect the GitHub repository to the EAS project and create the
   `agent-validate` label (LLP 0009, Setup).

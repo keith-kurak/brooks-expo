@@ -3,9 +3,13 @@
 # agents (validate-issue.sh, verify-on-simulator.sh) and local development
 # (.claude/skills/eas-sim-dev). Commands:
 #
-#   dev-build                      newest finished `development-simulator`
-#                                  build whose fingerprint matches this
-#                                  checkout; prints its id (exit 1: none)
+#   dev-build [ios|android]        newest finished dev-client build whose
+#                                  fingerprint matches this checkout
+#                                  (iOS: `development-simulator`, Android:
+#                                  `development`, an APK); prints its id
+#                                  (exit 1: none). Default: ios
+#   metro-port                     the port of a Metro server started from
+#                                  this worktree (exit 1: none)
 #   metro-url [port]               the public https URL of the Metro tunnel
 #                                  on <port> (default 8081)
 #   start --name <text> --build-id <id> [--open-url <url>] [--dev]
@@ -28,6 +32,16 @@
 #                                  stop the session, collect its artifacts,
 #                                  and build the evidence site in <dir>/site
 #   stop                           stop the session and reset the dotenv
+#
+# Preview-only sessions (.claude/skills/eas-sim-preview): a browser preview
+# of the dev client on iOS and Android, no controller, no dotenv. They are
+# found again by a tag named after this worktree.
+#   preview --name <text> --open-url <url> [--platform ios|android|both]
+#           [--ios-build <id>] [--android-build <id>] [--minutes <n>]
+#                                  start the sessions in parallel and print
+#                                  each platform's preview URL
+#   preview-list                   this worktree's live preview sessions
+#   preview-stop                   stop them
 #
 # The session id and the controller config live in .env.eas-simulator
 # (gitignored; it holds a token). EXPO_TOKEN must allow simulator sessions
@@ -83,24 +97,47 @@ session_udid() {
 }
 
 cmd_dev_build() {
+  local platform=${1:-ios} profile
+  case "$platform" in
+    ios) profile=development-simulator ;;
+    android) profile=development ;;
+    *) die "dev-build takes ios or android" ;;
+  esac
   local hash
-  hash=$("${EAS[@]}" fingerprint:generate --platform ios --build-profile development-simulator \
+  hash=$("${EAS[@]}" fingerprint:generate --platform "$platform" --build-profile "$profile" \
     --json --non-interactive 2>/dev/null | node -e "
       let d = ''; process.stdin.on('data', c => d += c);
       process.stdin.on('end', () => console.log(JSON.parse(d.slice(d.indexOf('{'))).hash ?? ''));")
-  [ -n "$hash" ] || die "could not compute the iOS fingerprint"
+  [ -n "$hash" ] || die "could not compute the $platform fingerprint"
   local id
-  id=$("${EAS[@]}" build:list --platform ios --build-profile development-simulator \
+  id=$("${EAS[@]}" build:list --platform "$platform" --build-profile "$profile" \
     --fingerprint-hash "$hash" --status finished --limit 1 --json --non-interactive 2>/dev/null \
     | node -e "
       let d = ''; process.stdin.on('data', c => d += c);
       process.stdin.on('end', () => { const a = JSON.parse(d.slice(d.indexOf('['))); console.log(a[0]?.id ?? ''); });")
   if [ -z "$id" ]; then
-    echo "No development-simulator build matches fingerprint $hash. Build one (about 15-20 min):" >&2
-    echo "  npx --yes eas-cli@latest build --platform ios --profile development-simulator --non-interactive" >&2
+    echo "No $profile $platform build matches fingerprint $hash. Build one (about 15-20 min):" >&2
+    echo "  npx --yes eas-cli@latest build --platform $platform --profile $profile --non-interactive" >&2
     exit 1
   fi
   echo "$id"
+}
+
+# A Metro server is ours when its process runs from this worktree, so a
+# Metro from another worktree is never picked up.
+cmd_metro_port() {
+  local root port pid cwd
+  root=$(git rev-parse --show-toplevel)
+  for port in $(seq 8081 8099); do
+    pid=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -n 1)
+    [ -n "$pid" ] || continue
+    cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
+    if [ "$cwd" = "$root" ] && curl -fsS -o /dev/null -H "expo-platform: ios" "http://127.0.0.1:${port}/" 2>/dev/null; then
+      echo "$port"
+      return
+    fi
+  done
+  die "no Metro server from $root on ports 8081-8099"
 }
 
 cmd_metro_url() {
@@ -230,10 +267,129 @@ cmd_stop() {
   echo "Session stopped and $DOTENV reset."
 }
 
-[ $# -gt 0 ] || { sed -n '2,40p' "$0"; exit 1; }
+# Preview sessions carry this tag so preview-list and preview-stop find
+# them without a dotenv. Tags are stored lowercased.
+preview_tag() {
+  printf 'preview-%s' "$(basename "$(git rev-parse --show-toplevel)" \
+    | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9\n' '-')"
+}
+
+# Live preview sessions of this worktree as "id<TAB>platform<TAB>status".
+preview_sessions() {
+  "${EAS[@]}" simulator:list --tag "$(preview_tag)" --type web-preview-only \
+    --status new --status queued --status starting --status in-progress \
+    --limit 20 --json --non-interactive 2>/dev/null | node -e "
+      let d = ''; process.stdin.on('data', c => d += c);
+      process.stdin.on('end', () => {
+        for (const s of JSON.parse(d.slice(d.indexOf('{'))).sessions ?? [])
+          console.log([s.id, s.platform, s.status, s.deviceRunSessionUrl].join('\t'));
+      });"
+}
+
+cmd_preview() {
+  local name="" open_url="" platforms="ios android" ios_build="" android_build="" minutes=30
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --name) name=$2; shift 2 ;;
+      --open-url) open_url=$2; shift 2 ;;
+      --platform) case "$2" in both) platforms="ios android" ;; ios|android) platforms=$2 ;; *) die "--platform takes ios, android, or both" ;; esac; shift 2 ;;
+      --ios-build) ios_build=$2; shift 2 ;;
+      --android-build) android_build=$2; shift 2 ;;
+      --minutes) minutes=$2; shift 2 ;;
+      *) die "unknown preview flag: $1" ;;
+    esac
+  done
+  [ -n "$name" ] || die "preview needs --name (what this preview is for)"
+  [ -n "$open_url" ] || die "preview needs --open-url (the dev-client link to Metro)"
+
+  # One preview per platform per worktree: a second one bills twice and
+  # shows the same thing.
+  local live
+  live=$(preview_sessions)
+  for p in $platforms; do
+    if printf '%s\n' "$live" | awk -F'\t' -v p="$p" 'toupper($2) == toupper(p)' | grep -q .; then
+      die "this worktree already has a live $p preview; run \`$0 preview-list\` or \`$0 preview-stop\`"
+    fi
+  done
+
+  # Resolve every build before booting anything, so a missing build costs
+  # no session time.
+  for p in $platforms; do
+    if [ "$p" = ios ] && [ -z "$ios_build" ]; then ios_build=$(cmd_dev_build ios); fi
+    if [ "$p" = android ] && [ -z "$android_build" ]; then android_build=$(cmd_dev_build android); fi
+  done
+
+  # Both platforms boot in parallel. --out-config-type env writes no
+  # dotenv, so an eas-sim-dev session in this worktree is untouched;
+  # --json makes start wait until the session is ready and print its
+  # preview URL. Browser activity does not reset an idle timer, so only
+  # --max-duration-minutes bounds a preview.
+  local tmp pids=() tag
+  tmp=$(mktemp -d)
+  tag=$(preview_tag)
+  for p in $platforms; do
+    local flags=(--platform "$p" --type web-preview-only --out-config-type env --json
+      --non-interactive --max-duration-minutes "$minutes" --tag "$tag" --tag preview
+      --name "${name:0:50}" --open-url "$open_url")
+    if [ "$p" = ios ]; then
+      # Dev-menu UserDefaults: no onboarding popup, no auto-open, no gear.
+      flags+=(--build-id "$ios_build"
+        --launch-arg -EXDevMenuIsOnboardingFinished --launch-arg 1
+        --launch-arg -EXDevMenuShowsAtLaunch --launch-arg 0
+        --launch-arg -EXDevMenuShowFloatingActionButton --launch-arg 0)
+    else
+      flags+=(--build-id "$android_build")
+    fi
+    ("${EAS[@]}" simulator:start "${flags[@]}" > "$tmp/$p.json" 2> "$tmp/$p.log") &
+    pids+=($!)
+    echo "Starting the $p preview..." >&2
+  done
+
+  local failed=""
+  for i in "${!pids[@]}"; do
+    wait "${pids[$i]}" || failed=1
+  done
+  for p in $platforms; do
+    if [ -s "$tmp/$p.json" ]; then
+      node -e "
+        const fs = require('fs');
+        const raw = fs.readFileSync(process.argv[1], 'utf8');
+        const j = JSON.parse(raw.slice(raw.indexOf('{')));
+        console.log(process.argv[2] + ' preview: ' + (j.remoteConfig?.previewUrl ?? '(no preview URL)'));
+        console.log(process.argv[2] + ' session: ' + j.deviceRunSessionUrl);
+      " "$tmp/$p.json" "$p"
+    else
+      echo "$p preview failed to start:" >&2
+      tail -n 20 "$tmp/$p.log" >&2
+      failed=1
+    fi
+  done
+  echo "The sessions stop by themselves after $minutes minutes. Stop them earlier with: $0 preview-stop"
+  rm -rf "$tmp"
+  [ -z "$failed" ]
+}
+
+cmd_preview_list() {
+  local live
+  live=$(preview_sessions)
+  [ -n "$live" ] || { echo "No live preview sessions for this worktree."; return; }
+  printf '%s\n' "$live"
+}
+
+cmd_preview_stop() {
+  local id
+  preview_sessions | while IFS=$'\t' read -r id _; do
+    [ -n "$id" ] || continue
+    "${EAS[@]}" simulator:stop --id "$id" --non-interactive >/dev/null 2>&1 || true
+    echo "Stopped preview session $id"
+  done
+}
+
+[ $# -gt 0 ] || { awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 1; }
 cmd=$1; shift
 case "$cmd" in
   dev-build) cmd_dev_build "$@" ;;
+  metro-port) cmd_metro_port "$@" ;;
   metro-url) cmd_metro_url "$@" ;;
   start) cmd_start "$@" ;;
   env) cmd_env "$@" ;;
@@ -242,5 +398,8 @@ case "$cmd" in
   unlink) cmd_unlink "$@" ;;
   evidence) cmd_evidence "$@" ;;
   stop) cmd_stop "$@" ;;
+  preview) cmd_preview "$@" ;;
+  preview-list) cmd_preview_list "$@" ;;
+  preview-stop) cmd_preview_stop "$@" ;;
   *) die "unknown command: $cmd" ;;
 esac

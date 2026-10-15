@@ -148,6 +148,29 @@ every argent client on that Mac without its own `ARGENT_TOOLS_URL`, in any
 worktree, drives the linked device. The skill allows the MCP path only when
 one worktree has a session, and unlinks in its cleanup step.
 
+## Preview on both platforms
+
+[observed] `.claude/skills/eas-sim-preview/SKILL.md` and `sim-session.sh
+preview` open one `web-preview-only` session on iOS and one on Android, each
+with its dev-client build (`development-simulator` for iOS, the
+`development` APK for Android) and `--open-url` set to this worktree's
+tunneled Metro. A person drives them in the browser; no agent controls them.
+[confirmed — Keith Kurak, 2026-10-14] This is the one exception to "one iOS
+simulator per worktree": previews have no controller, and their purpose is
+to show a person both platforms.
+
+[observed] `simulator:start --out-config-type env --json` writes no dotenv,
+waits until the session is ready, and prints `id`, `deviceRunSessionUrl`,
+and `remoteConfig.previewUrl` (eas-cli 24.13.0 source). So previews do not
+touch an `eas-sim-dev` session's `.env.eas-simulator`. Each preview carries
+the tag `preview-<worktree folder>`; `preview-list` and `preview-stop` find
+the sessions with `simulator:list --tag`. `sim-session.sh metro-port` picks
+only a Metro whose process runs from this worktree.
+
+[inferred] Not yet run end to end: the Android `--open-url` with the
+`exp+ecommerce-demo` scheme, and `--open-url` on a `web-preview-only`
+session. eas-cli accepts `--open-url` for every session type.
+
 ## The agent-validate label
 
 [observed] `expo-bot-verify.yml` also has a `pull_request_labeled` trigger
